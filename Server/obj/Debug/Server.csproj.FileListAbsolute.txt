@@ -1,0 +1,11 @@
+C:\Users\Harley\Desktop\Game Server\Server\Server\obj\Debug\Server.csprojAssemblyReference.cache
+C:\Users\Harley\Desktop\Game Server\Server\Server\obj\Debug\Server.csproj.CoreCompileInputs.cache
+C:\Users\Harley\Desktop\Game Server\Server\Server\obj\Debug\Interop.ADODB.dll
+C:\Users\Harley\Desktop\Game Server\Server\Server\obj\Debug\Server.csproj.ResolveComReference.cache
+C:\Users\Harley\Desktop\Game Server\Server\Server\bin\Debug\Server.exe.config
+C:\Users\Harley\Desktop\Game Server\Server\Server\bin\Debug\Server.exe
+C:\Users\Harley\Desktop\Game Server\Server\Server\bin\Debug\Server.pdb
+C:\Users\Harley\Desktop\Game Server\Server\Server\bin\Debug\ByteBuffer.dll
+C:\Users\Harley\Desktop\Game Server\Server\Server\obj\Debug\Server.csproj.CopyComplete
+C:\Users\Harley\Desktop\Game Server\Server\Server\obj\Debug\Server.exe
+C:\Users\Harley\Desktop\Game Server\Server\Server\obj\Debug\Server.pdb
