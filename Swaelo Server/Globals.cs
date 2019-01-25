@@ -9,5 +9,6 @@ namespace Swaelo_Server
     class Globals
     {
         public static Database database = new Database();
+        public static WorldItems ground_items = new WorldItems();
     }
 }

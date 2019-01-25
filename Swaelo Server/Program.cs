@@ -8,6 +8,7 @@ namespace Swaelo_Server
         {
             Server.InitializeServer();  //start the game server
             Globals.database.Connect(); //connect to the database
+            Globals.ground_items.LoadGroundItems();
             Console.ReadLine();
         }
     }

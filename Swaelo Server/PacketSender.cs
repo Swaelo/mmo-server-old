@@ -11,7 +11,8 @@ public enum ServerPacketType
     SpawnExternalClient = 3, //Sends a message to a client to spawn someone elses character into the game world <int:PacketType, string:AccountName, vec3:Position, vec4:rotation>
     UpdatePlayer = 4,    //Sends a message to a client with one of the other clients updated position and rotation data <int:PacketType, Vec3:Position, Vec4:Rotation>
     RemovePlayer = 5,    //Tells clients to remove someone elses character who has disconnected from the game
-    PlayerMessage = 6 
+    PlayerMessage = 6,  //Sends one of the other clients chat messages to be display in this clients chat window
+    GroundItems = 7       //Sends the complete list of items on the ground to one of the clients who has connected
 }
 
 namespace Swaelo_Server
@@ -106,6 +107,32 @@ namespace Swaelo_Server
             PacketWriter.WriteInteger((int)ServerPacketType.PlayerMessage);
             PacketWriter.WriteString(Sender);
             PacketWriter.WriteString(Message);
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        public static void SendGroundItems(int ClientID)
+        {
+            Console.WriteLine("sending ground items");
+            //make a packet with all the items listed in it
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.GroundItems);   //packet type
+            PacketWriter.WriteInteger(Globals.ground_items.GetItemCount()); //item count
+
+            for(int iter = 0; iter < Globals.ground_items.GetItemCount(); iter++)
+            {//add the id of each item
+                PacketWriter.WriteInteger(Globals.ground_items.GetGroundItems()[iter].ItemID);
+                //and the position/rotation data where the item needs to be spawned at
+                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemPosition.x);
+                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemPosition.y);
+                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemPosition.z);
+                //rotation
+                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.x);
+                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.y);
+                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.z);
+                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.w);
+            }
+            //send the packet to the client and close the packet writer
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
             PacketWriter.Dispose();
         }

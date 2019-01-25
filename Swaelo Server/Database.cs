@@ -81,27 +81,5 @@ namespace Swaelo_Server
             //return the rotation values
             return new Vector4(XRot, YRot, ZRot, WRot);
         }
-
-        ////Saves all of a clients player character data into the database
-        //public void SavePlayerData(int ClientID)
-        //{
-        //    //Grabs all the info from the clients class which will be saved into the database
-        //    Client client = Globals.clients[ClientID];
-        //    string Query = "SELECT * FROM accounts WHERE Username='" + client.AccountName + "'";
-        //    //Open the database and save all the info into it
-        //    recorder.Open(Query, connection, cursorType, lockType);
-        //    //save position data
-        //    recorder.Fields["XPosition"].Value = client.PlayerPosition.x;
-        //    recorder.Fields["YPosition"].Value = client.PlayerPosition.y;
-        //    recorder.Fields["ZPosition"].Value = client.PlayerPosition.z;
-        //    //save rotation data
-        //    recorder.Fields["XRotation"].Value = client.PlayerRotation.x;
-        //    recorder.Fields["YRotation"].Value = client.PlayerRotation.y;
-        //    recorder.Fields["ZRotation"].Value = client.PlayerRotation.z;
-        //    recorder.Fields["WRotation"].Value = client.PlayerRotation.w;
-        //    //update and close the database
-        //    recorder.Update();
-        //    recorder.Close();
-        //}
     }
 }
