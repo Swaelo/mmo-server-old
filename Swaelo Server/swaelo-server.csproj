@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CharacterData.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="ClientManager.cs" />
     <Compile Include="Database.cs" />

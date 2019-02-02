@@ -19,6 +19,17 @@ namespace Swaelo_Server
             connection.Open();
         }
 
+        //Checks if a character exists within the database
+        public bool DoesCharacterExist(int ClientID, string CharacterName)
+        {
+            Console.WriteLine("checking if " + CharacterName + " character already exists");
+            string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
+            recorder.Open(Query, connection, cursorType, lockType);
+            bool CharacterExists = !recorder.EOF;
+            recorder.Close();
+            return CharacterExists;
+        }
+
         //Checks if an account exists within the database
         public bool DoesAccountExist(int ClientID, string AccountName)
         {
@@ -47,6 +58,95 @@ namespace Swaelo_Server
             bool LoginSuccess = !recorder.EOF;
             recorder.Close();
             return LoginSuccess;
+        }
+
+        //Gets the number of characters this user has created so far
+        public int GetCharacterCount(int ClientID, string AccountName)
+        {
+            string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
+            recorder.Open(Query, connection, cursorType, lockType);
+            int CharacterCount = recorder.Fields["CharactersCreated"].Value;
+            recorder.Close();
+            return CharacterCount;
+        }
+
+        public CharacterData GetCharacterData(string CharacterName)
+        {
+            CharacterData Data = new CharacterData();
+            //Extract all of this characters data from the database and save it into this structure object
+            string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
+            recorder.Open(Query, connection, cursorType, lockType);
+            Data.Account = recorder.Fields["OwnerAccountName"].Value;
+            Data.Position = new Vector3(recorder.Fields["XPosition"].Value, recorder.Fields["YPosition"].Value, recorder.Fields["ZPosition"].Value);
+            Data.Name = CharacterName;
+            Data.Experience = recorder.Fields["ExperiencePoints"].Value;
+            Data.ExperienceToLevel = recorder.Fields["ExperienceTOLevel"].Value;
+            Data.Level = recorder.Fields["Level"].Value;
+            Data.IsMale = recorder.Fields["IsMale"].Value == 1;
+            recorder.Close();
+            return Data;
+        }
+
+        public string GetCharacterName(string AccountName, int CharacterIndex)
+        {
+            string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
+            recorder.Open(Query, connection, cursorType, lockType);
+            string CharacterName = "";
+            switch(CharacterIndex)
+            {
+                case (1):
+                    CharacterName = recorder.Fields["FirstCharacterName"].Value;
+                    break;
+                case (2):
+                    CharacterName = recorder.Fields["SecondCharacterName"].Value;
+                    break;
+                case (3):
+                    CharacterName = recorder.Fields["ThirdCharacterName"].Value;
+                    break;
+            }
+            recorder.Close();
+            return CharacterName;
+        }
+
+        //Registers a new character into the database under a username
+        public void RegisterNewCharacter(string AccountName, string CharacterName, bool IsMale)
+        {
+            //Register this character into the database
+            string Query = "SELECT * FROM characters WHERE 0=1";
+            recorder.Open(Query, connection, cursorType, lockType);
+            recorder.AddNew();
+            recorder.Fields["OwnerAccountName"].Value = AccountName;
+            recorder.Fields["XPosition"].Value = 0f;
+            recorder.Fields["YPosition"].Value = 0f;
+            recorder.Fields["ZPosition"].Value = 0f;
+            recorder.Fields["CharacterName"].Value = CharacterName;
+            recorder.Fields["ExperiencePoints"].Value = 0;
+            recorder.Fields["ExperienceToLevel"].Value = 100;
+            recorder.Fields["Level"].Value = 1;
+            recorder.Fields["IsMale"].Value = (IsMale ? 1 : 0);
+            recorder.Update();
+            recorder.Close();
+
+            //Update the users account to note that this character belongs to them, and they have used up on of their character slots
+            Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
+            recorder.Open(Query, connection, cursorType, lockType);
+            int CharacterCount = recorder.Fields["CharactersCreated"].Value;
+            switch(CharacterCount)
+            {
+                case (0):
+                    recorder.Fields["FirstCharacterName"].Value = CharacterName;
+                    break;
+                case (1):
+                    recorder.Fields["SecondCharacterName"].Value = CharacterName;
+                    break;
+                case (2):
+                    recorder.Fields["ThirdCharacterName"].Value = CharacterName;
+                    break;
+            }
+            CharacterCount++;
+            recorder.Fields["CharactersCreated"].Value = CharacterCount;
+            recorder.Update();
+            recorder.Close();
         }
 
         //Gets the character position data from a users account in the database

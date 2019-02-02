@@ -6,101 +6,40 @@ using System.Threading.Tasks;
 
 public enum ServerPacketType
 {
-    Message = 1,    //server sends a message to the client <int:PacketType, string:Message>
-    EnterGame = 2,   //server sends character info data to the client and tells them to spawn into the game <int:PacketType, float:XPos, float:YPos, float:ZPos, float:XRot, float:YRot, float:ZRot, float:WRot>
-    SpawnExternalClient = 3, //Sends a message to a client to spawn someone elses character into the game world <int:PacketType, string:AccountName, vec3:Position, vec4:rotation>
-    UpdatePlayer = 4,    //Sends a message to a client with one of the other clients updated position and rotation data <int:PacketType, Vec3:Position, Vec4:Rotation>
-    RemovePlayer = 5,    //Tells clients to remove someone elses character who has disconnected from the game
-    PlayerMessage = 6,  //Sends one of the other clients chat messages to be display in this clients chat window
-    GroundItems = 7       //Sends the complete list of items on the ground to one of the clients who has connected
+    ConsoleMessage = 1, //displays a message in the clients console log window
+    PlayerMessage = 2,  //displays a message in the clients player chat window
+
+    RegisterReply = 3,  //tells a client if their account was registered
+    LoginReply = 4, //tells a client if they logged into the account
+    CreateCharacterReply = 5,   //tells a client if their character was created
+
+    SendCharacterData = 6,  //tells a client the info for each character they have created
+    PlayerEnterWorld = 7,   //tells a client to enter into the game world
+    PlayerUpdatePosition = 8,   //tells a client to update someone elses position info
+
+    SpawnOtherPlayer = 9,   //tells a client to spawn someone elses character into their world
+    SpawnOtherPlayers = 10,  //tells a client to spawn a list of other players to spawn into their world
+    RemoveOtherPlayer = 11  //tells a client to remove someone elses character from their world
 }
 
 namespace Swaelo_Server
 {
     static class PacketSender
     {
-        //Sends a message to a client
-        public static void SendMessage(int ClientID, string Message)
+        //displays a message in the clients console log window
+        public static void SendConsoleMessage(int ClientID, string Message)
         {
+            Console.WriteLine("Sending console message to client");
             //Create the packet to send through the network
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.Message);
+            PacketWriter.WriteInteger((int)ServerPacketType.ConsoleMessage);
             PacketWriter.WriteString(Message);
             //Send the packet to the target client
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
             PacketWriter.Dispose();
         }
 
-        //Sends a message to a client to enter into the game world <int:PacketType, float:XPos, float:YPos, float:ZPos, float:XRot, float:YRot, float:ZRot, float:WRot>
-        public static void SendEnterGame(int ClientID, string AccountName, Vector3 CharacterPosition, Vector4 CharacterRotation)
-        {
-            //Create the packet to send through the network
-            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.EnterGame); //write the packet type
-            PacketWriter.WriteString(AccountName);
-            //write character position data
-            PacketWriter.WriteFloat(CharacterPosition.x);
-            PacketWriter.WriteFloat(CharacterPosition.y);
-            PacketWriter.WriteFloat(CharacterPosition.z);
-            //write character rotation data
-            PacketWriter.WriteFloat(CharacterRotation.x);
-            PacketWriter.WriteFloat(CharacterRotation.y);
-            PacketWriter.WriteFloat(CharacterRotation.z);
-            PacketWriter.WriteFloat(CharacterRotation.w);
-            //Send the packet to the client
-            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
-            //close the packet writer
-            PacketWriter.Dispose();
-        }
-
-        //Sends a message to a client to spawn someone elses character into the game world <int:PacketType, string:AccountName, vec3:Position, vec4:rotation>
-        public static void SendSpawnOther(int ClientID, string AccountName, Vector3 CharacterPosition, Vector4 CharacterRotation)
-        {
-            //Create the packet to send through the network
-            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.SpawnExternalClient); //write the packet type
-            PacketWriter.WriteString(AccountName);  //write the name of the client being spawned in
-            //write position data
-            PacketWriter.WriteFloat(CharacterPosition.x);
-            PacketWriter.WriteFloat(CharacterPosition.y);
-            PacketWriter.WriteFloat(CharacterPosition.z);
-            //write rotation data
-            PacketWriter.WriteFloat(CharacterRotation.x);
-            PacketWriter.WriteFloat(CharacterRotation.y);
-            PacketWriter.WriteFloat(CharacterRotation.z);
-            PacketWriter.WriteFloat(CharacterRotation.w);
-            //send the packet to the client
-            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
-            //close the writer
-            PacketWriter.Dispose();
-        }
-
-        //Sends a message to a client with one of the other clients updated position and rotation data <int:PacketType, Vec3:Position, Vec4:Rotation>
-        public static void SendPlayerUpdate(int ClientID, string AccountName, Vector3 NewPosition)
-        {
-            //Create the packet to send through the network
-            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.UpdatePlayer); //write the packet type
-            PacketWriter.WriteString(AccountName);//write the account name
-            //write the position data
-            PacketWriter.WriteFloat(NewPosition.x);
-            PacketWriter.WriteFloat(NewPosition.y);
-            PacketWriter.WriteFloat(NewPosition.z);
-            //send the packet to the client
-            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
-            //close the packet writer
-            PacketWriter.Dispose();
-        }
-
-        public static void SendRemovePlayer(int ClientID, string AccountName)
-        {
-            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.RemovePlayer);
-            PacketWriter.WriteString(AccountName);
-            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
-            PacketWriter.Dispose();
-        }
-
+        //displays a message in the clients player chat window
         public static void SendPlayerMessage(int ClientID, string Sender, string Message)
         {
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
@@ -111,28 +50,149 @@ namespace Swaelo_Server
             PacketWriter.Dispose();
         }
 
-        public static void SendGroundItems(int ClientID)
+        //tells a client if their account was registered
+        public static void SendRegisterReply(int ClientID, bool Success, string Message)
         {
-            Console.WriteLine("sending ground items");
-            //make a packet with all the items listed in it
+            Console.WriteLine("Telling a client their account registration request was " + (Success ? "accepted" : "denied"));
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.GroundItems);   //packet type
-            PacketWriter.WriteInteger(Globals.ground_items.GetItemCount()); //item count
+            PacketWriter.WriteInteger((int)ServerPacketType.RegisterReply);
+            PacketWriter.WriteInteger(Success ? 1 : 0);
+            PacketWriter.WriteString(Message);
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
 
-            for(int iter = 0; iter < Globals.ground_items.GetItemCount(); iter++)
-            {//add the id of each item
-                PacketWriter.WriteInteger(Globals.ground_items.GetGroundItems()[iter].ItemID);
-                //and the position/rotation data where the item needs to be spawned at
-                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemPosition.x);
-                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemPosition.y);
-                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemPosition.z);
-                //rotation
-                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.x);
-                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.y);
-                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.z);
-                PacketWriter.WriteFloat(Globals.ground_items.GetGroundItems()[iter].ItemRotation.w);
+        //tells a client if they logged into the account
+        public static void SendLoginReply(int ClientID, bool Success, string Message)
+        {
+            Console.WriteLine("Telling a client their account login request was " + (Success ? "accepted" : "denied"));
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.LoginReply);
+            PacketWriter.WriteInteger(Success ? 1 : 0);
+            PacketWriter.WriteString(Message);
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        //tells a client if their character was created
+        public static void SendCreateCharacterReply(int ClientID, bool CreationSuccess, string ReplyMessage)
+        {
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.CreateCharacterReply);
+            PacketWriter.WriteInteger(CreationSuccess ? 1 : 0);
+            PacketWriter.WriteString(ReplyMessage);
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        //tells a client the info for each character they have created
+        public static void SendCharacterData(int ClientID, string AccountName)
+        {
+            Console.WriteLine("telling a client all the information for each character they have created thus far");
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.SendCharacterData);
+            //First we need to look up in the database how many characters this user has created so far
+            int CharacterCount = Globals.database.GetCharacterCount(ClientID, AccountName);
+            PacketWriter.WriteInteger(CharacterCount);
+            //Now loop through and add all the information for each character that has already been created
+            for(int i = 0; i < CharacterCount; i++)
+            {
+                //Get the name of each of the players characters one at a time
+                string CharacterName = Globals.database.GetCharacterName(AccountName, i + 1);
+                //Get all the data for this character from the database
+                CharacterData Data = Globals.database.GetCharacterData(CharacterName);
+                //Save all of this information into the packet
+                PacketWriter.WriteString(Data.Account);
+                PacketWriter.WriteFloat(Data.Position.x);
+                PacketWriter.WriteFloat(Data.Position.y);
+                PacketWriter.WriteFloat(Data.Position.z);
+                PacketWriter.WriteString(Data.Name);
+                PacketWriter.WriteInteger(Data.Experience);
+                PacketWriter.WriteInteger(Data.ExperienceToLevel);
+                PacketWriter.WriteInteger(Data.Level);
+                PacketWriter.WriteInteger(Data.IsMale ? 1 : 0);
             }
-            //send the packet to the client and close the packet writer
+            //Send the packet to the client
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        //tells a client to enter into the game world
+        public static void SendPlayerEnterWorld(int ClientID, CharacterData Data)
+        {
+            Console.WriteLine("instructing " + Data.Account + " to enter the game world");
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.PlayerEnterWorld); //write the packet type
+            PacketWriter.WriteString(Data.Account);
+            PacketWriter.WriteString(Data.Name);
+            PacketWriter.WriteInteger(Data.IsMale ? 1 : 0);
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        //tells a client to update someone elses position info
+        public static void SendPlayerUpdatePosition(int ClientID, string CharacterName, Vector3 NewPosition)
+        {
+            Console.WriteLine("spreading player location update to another client");
+            //Create the packet to send through the network
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.PlayerUpdatePosition); //write the packet type
+            PacketWriter.WriteString(CharacterName);//write the account name
+            //write the position data
+            PacketWriter.WriteFloat(NewPosition.x);
+            PacketWriter.WriteFloat(NewPosition.y);
+            PacketWriter.WriteFloat(NewPosition.z);
+            //send the packet to the client
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            //close the packet writer
+            PacketWriter.Dispose();
+        }
+
+        //tells a client to spawn someone elses character into their world
+        public static void SendSpawnOtherPlayer(int ClientID, string AccountName, CharacterData Data)
+        {
+            Console.WriteLine("instructing " + AccountName + " to spawn " + Data.Account + " character in their world");
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.SpawnOtherPlayer);  //packet type
+            PacketWriter.WriteString(Data.Account); //account name
+            PacketWriter.WriteFloat(Data.Position.x);   //character world position
+            PacketWriter.WriteFloat(Data.Position.y);
+            PacketWriter.WriteFloat(Data.Position.z);
+            PacketWriter.WriteString(Data.Name);    //character name
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        //tells a client to spawn a list of other players to spawn into their world
+        public static void SendSpawnOtherPlayers(int ClientID, List<Client> OtherPlayers)
+        {
+            Console.WriteLine("telling the new client to spawn everyone else into their game world");
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.SpawnOtherPlayers);  //packet type
+            PacketWriter.WriteInteger(OtherPlayers.Count);  //amount of other clients to spawn in
+
+            //Loop through the list of other clients that need to be spawned in
+            foreach (Client Other in OtherPlayers)
+            {
+                //Write into the packet the information for each other player in the game right now
+                PacketWriter.WriteString(Other.AccountName);
+                PacketWriter.WriteFloat(Other.CharacterPosition.x);
+                PacketWriter.WriteFloat(Other.CharacterPosition.y);
+                PacketWriter.WriteFloat(Other.CharacterPosition.z);
+                PacketWriter.WriteString(Other.CurrentCharacterName);
+            }
+
+            //Now send the packet to the client and close the reader
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        //tells a client to remove someone elses character from their world
+        public static void SendRemoveOtherPlayer(int ClientID, string CharacterName)
+        {
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.RemoveOtherPlayer);  //packet type
+            PacketWriter.WriteString(CharacterName);
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
             PacketWriter.Dispose();
         }

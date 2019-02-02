@@ -11,6 +11,7 @@ namespace Swaelo_Server
     class WorldItems
     {
         public static List<GameItem> GroundItems = new List<GameItem>();
+
         public void LoadGroundItems()
         {
             //Load all the ground items from the database
@@ -29,17 +30,39 @@ namespace Swaelo_Server
                 string ItemDataQuery = "SELECT * FROM ground_items WHERE ItemNumber='" + (ItemIterator + 1) + "'";
                 rec.Open(ItemDataQuery, db.connection, db.cursorType, db.lockType);
                 double ItemID = rec.Fields["ItemID"].Value;
+                int ItemNumber = (int)rec.Fields["ItemNumber"].Value;
                 string ItemName = rec.Fields["ItemName"].Value;
                 Vector3 ItemPosition = new Vector3(rec.Fields["XPosition"].Value, rec.Fields["YPosition"].Value, rec.Fields["ZPosition"].Value);
                 Vector4 ItemRotation = new Vector4(rec.Fields["XRotation"].Value, rec.Fields["YRotation"].Value, rec.Fields["ZRotation"].Value, rec.Fields["WRotation"].Value);
                 //store all the info in a new object and add it to the list
-                GameItem NewItem = new GameItem((int)ItemID, ItemName, ItemPosition, ItemRotation);
+                GameItem NewItem = new GameItem((int)ItemID, ItemNumber, ItemName, ItemPosition, ItemRotation);
                 GroundItems.Add(NewItem);
                 Console.WriteLine(ItemName + " is on the ground at " + ItemPosition.x + ", " + ItemPosition.y + ", " + ItemPosition.z);
                 rec.Close();
             }
         }
+
         public List<GameItem> GetGroundItems() { return GroundItems; }
         public int GetItemCount() { return GroundItems.Count; }
+
+        public static bool ItemOnGround(int ItemNumber)
+        {
+            for(int i = 0; i < GroundItems.Count; i++)
+            {
+                if (GroundItems[i].ItemNumber == ItemNumber)
+                    return true;
+            }
+            return false;
+        }
+
+        public static GameItem GetItemByNumber(int ItemNumber)
+        {
+            for(int i = 0; i < GroundItems.Count; i++)
+            {
+                if (GroundItems[i].ItemNumber == ItemNumber)
+                    return GroundItems[i];
+            }
+            return null;
+        }
     }
 }

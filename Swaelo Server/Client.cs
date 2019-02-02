@@ -6,6 +6,8 @@ namespace Swaelo_Server
 {
     class Client
     {
+        public CharacterData CurrentCharacterData;
+
         public int ClientID;
         public TcpClient ClientSocket;
         public NetworkStream ClientStream;
@@ -13,9 +15,9 @@ namespace Swaelo_Server
         public ByteBuffer.ByteBuffer Reader;
 
         public string AccountName = "";
+        public string CurrentCharacterName = "";
         public bool InGame = false;
         public Vector3 CharacterPosition;
-        public Vector4 CharacterRotation;
 
         public void Start()
         {
@@ -73,7 +75,7 @@ namespace Swaelo_Server
                 if (!client.InGame)
                     continue;
                 //Send the message to all the other clients
-                PacketSender.SendRemovePlayer(ID, AccountName);
+                PacketSender.SendRemoveOtherPlayer(ID, CurrentCharacterName);
             }
         }
     }

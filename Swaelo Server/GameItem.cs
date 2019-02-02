@@ -10,13 +10,15 @@ namespace Swaelo_Server
     class GameItem
     {
         public int ItemID;
+        public int ItemNumber;
         public string ItemName;
         public Vector3 ItemPosition;
         public Vector4 ItemRotation;
 
-        public GameItem(int ID, string Name, Vector3 Position, Vector4 Rotation)
+        public GameItem(int ID, int Number, string Name, Vector3 Position, Vector4 Rotation)
         {
             ItemID = ID;
+            ItemNumber = Number;
             ItemName = Name;
             ItemPosition = Position;
             ItemRotation = Rotation;
