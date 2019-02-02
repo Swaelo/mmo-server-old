@@ -133,7 +133,6 @@ namespace Swaelo_Server
         //tells a client to update someone elses position info
         public static void SendPlayerUpdatePosition(int ClientID, string CharacterName, Vector3 NewPosition)
         {
-            Console.WriteLine("spreading player location update to another client");
             //Create the packet to send through the network
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.PlayerUpdatePosition); //write the packet type

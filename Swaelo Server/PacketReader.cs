@@ -286,7 +286,6 @@ namespace Swaelo_Server
         //Gets updated character information data from one of the connect clients, this needs to be sent out to everyone else so they know where that character is at
         public static void HandlePlayerUpdate(int ClientID, byte[] PacketData)
         {
-            Console.WriteLine("a client sent us their updated position information");
             //start the packet reader and give it the packet data information
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
