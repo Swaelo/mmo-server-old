@@ -32,5 +32,10 @@ namespace Swaelo_Server
             this.y = yValue;
             this.z = zValue;
         }
+
+        public string ToString()
+        {
+            return this.x + ", " + this.y + ", " + this.z;
+        }
     }
 }

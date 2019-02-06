@@ -5,7 +5,7 @@ namespace Swaelo_Server
 {
     class Database
     {
-        public Recordset recorder;
+        public Recordset recorder = null;
         public Connection connection;
         public CursorTypeEnum cursorType = ADODB.CursorTypeEnum.adOpenStatic;
         public LockTypeEnum lockType = ADODB.LockTypeEnum.adLockOptimistic;
@@ -34,17 +34,7 @@ namespace Swaelo_Server
         public bool DoesAccountExist(int ClientID, string AccountName)
         {
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
-            if (connection.State == 0)
-            {
-                Console.WriteLine("database connection is not open, reopening");
-                recorder = new Recordset();
-                connection = new Connection();
-                connection.ConnectionString = "Driver={MySQL ODBC 3.51 Driver};Server=localhost;Port=3306;Database=gamedatabase;User=root;Password=;Option=3;";
-                connection.CursorLocation = CursorLocationEnum.adUseServer;
-                connection.Open();
-            }
             recorder.Open(Query, connection, cursorType, lockType);
-            //If we searched the entire database then the account doesnt exist
             bool AccountExists = !recorder.EOF;
             recorder.Close();
             return AccountExists;

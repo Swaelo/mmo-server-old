@@ -18,6 +18,7 @@ namespace Swaelo_Server
         public string CurrentCharacterName = "";
         public bool InGame = false;
         public Vector3 CharacterPosition;
+        public bool IsMale = true;
 
         public void Start()
         {
@@ -31,36 +32,26 @@ namespace Swaelo_Server
 
         private void ReadPacket(IAsyncResult result)
         {
-            try
+            //Get the size of the packet
+            int PacketSize = ClientStream.EndRead(result);
+
+            //0 bytes being received means the connection was closed by the client so we can shut down this connection now
+            if(PacketSize == 0)
             {
-                //Get the amount of data sent to us
-                int PacketSize = ClientStream.EndRead(result);
-                //If the size of the packet is 0 the connection to the client has been lost
-                if(PacketSize <= 0)
-                {
-                    Console.WriteLine("Connection from '{0}' has been lost", ClientSocket.Client.RemoteEndPoint.ToString());
-                    CloseConnection();
-                    return;
-                }
-                //Read in the packet from the server
-                byte[] PacketData = new byte[PacketSize];
-                Array.Copy(ClientBuffer, PacketData, PacketSize);
-                //Send the packet on to be handled by its handler function
-                PacketReader.HandlePacket(ClientID, PacketData);
-                //start listening for packets again
-                ClientStream.BeginRead(ClientBuffer, 0, ClientSocket.ReceiveBufferSize, ReadPacket, null);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("exception reading packet from client, closing their connection");
                 CloseConnection();
                 return;
             }
+
+            //read in the packet data send from the client
+            byte[] PacketData = new byte[PacketSize];
+            Array.Copy(ClientBuffer, PacketData, PacketSize);
+            PacketReader.HandlePacket(ClientID, PacketData);
+            //start listening for new packets again
+            ClientStream.BeginRead(ClientBuffer, 0, ClientSocket.ReceiveBufferSize, ReadPacket, null);
         }
 
         private void CloseConnection()
         {
-            Console.WriteLine("Connection from '{0}' has been closed.", ClientSocket.Client.RemoteEndPoint.ToString());
             ClientManager.Clients.Remove(ClientID);
             ClientSocket.Close();
             //Tell all the remaining clients to remove this clients character from the game

@@ -40,6 +40,31 @@ namespace Swaelo_Server
             return ActiveClients;
         }
 
+        //Returns a list of all active clients
+        public static List<Client> GetAllActiveClients()
+        {
+            List<Client> ActiveClients = new List<Client>();
+            foreach(var Client in Clients)
+            {
+                if (Client.Value.InGame)
+                    ActiveClients.Add(Client.Value);
+            }
+            return ActiveClients;
+        }
+
+        //Returns a list of all the clients except for one
+        public static List<Client> GetOtherClients(int ClientID)
+        {
+            List<Client> OtherClients = new List<Client>();
+            foreach(var Client in Clients)
+            {
+                if (ClientID == Client.Key)
+                    continue;
+                OtherClients.Add(Client.Value);
+            }
+            return OtherClients;
+        }
+
         //When a new client has connected to the server, map their connection into the dictionary
         public static void CreateNewConnection(TcpClient TempClient)
         {
@@ -48,6 +73,8 @@ namespace Swaelo_Server
             NewClient.ClientID = ((IPEndPoint)TempClient.Client.RemoteEndPoint).Port;
             NewClient.Start();
             Clients.Add(NewClient.ClientID, NewClient);
+
+            //Tell this client to spawn in all of the other clients player characters
         }
 
         //Sends a packet to the client with the matching connection ID
@@ -57,6 +84,13 @@ namespace Swaelo_Server
             PacketWriter.WriteBytes(PacketData);
             Clients[ClientID].ClientStream.BeginWrite(PacketWriter.ToArray(), 0, PacketWriter.ToArray().Length, null, null);
             PacketWriter.Dispose();
+        }
+
+        //Sends a packet to all the clients in the given list
+        public static void SendPacketToList(byte[] PacketData, List<Client> ClientList)
+        {
+            foreach (Client Player in ClientList)
+                SendPacketTo(Player.ClientID, PacketData);
         }
 
         //Sends the packet to every single client that is connected to the server

@@ -18,8 +18,7 @@ public enum ServerPacketType
     PlayerUpdatePosition = 8,   //tells a client to update someone elses position info
 
     SpawnOtherPlayer = 9,   //tells a client to spawn someone elses character into their world
-    SpawnOtherPlayers = 10,  //tells a client to spawn a list of other players to spawn into their world
-    RemoveOtherPlayer = 11  //tells a client to remove someone elses character from their world
+    RemoveOtherPlayer = 10,  //tells a client to spawn a list of other players to spawn into their world
 }
 
 namespace Swaelo_Server
@@ -53,7 +52,6 @@ namespace Swaelo_Server
         //tells a client if their account was registered
         public static void SendRegisterReply(int ClientID, bool Success, string Message)
         {
-            Console.WriteLine("Telling a client their account registration request was " + (Success ? "accepted" : "denied"));
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.RegisterReply);
             PacketWriter.WriteInteger(Success ? 1 : 0);
@@ -65,7 +63,6 @@ namespace Swaelo_Server
         //tells a client if they logged into the account
         public static void SendLoginReply(int ClientID, bool Success, string Message)
         {
-            Console.WriteLine("Telling a client their account login request was " + (Success ? "accepted" : "denied"));
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.LoginReply);
             PacketWriter.WriteInteger(Success ? 1 : 0);
@@ -88,7 +85,6 @@ namespace Swaelo_Server
         //tells a client the info for each character they have created
         public static void SendCharacterData(int ClientID, string AccountName)
         {
-            Console.WriteLine("telling a client all the information for each character they have created thus far");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.SendCharacterData);
             //First we need to look up in the database how many characters this user has created so far
@@ -118,20 +114,44 @@ namespace Swaelo_Server
         }
 
         //tells a client to enter into the game world
-        public static void SendPlayerEnterWorld(int ClientID, CharacterData Data)
+        public static void SendPlayerEnterWorld(int ClientID)
         {
-            Console.WriteLine("instructing " + Data.Account + " to enter the game world");
+            Client Client = ClientManager.Clients[ClientID];
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.PlayerEnterWorld); //write the packet type
-            PacketWriter.WriteString(Data.Account);
-            PacketWriter.WriteString(Data.Name);
-            PacketWriter.WriteInteger(Data.IsMale ? 1 : 0);
+
+            //we also want to pass information about all of the other clients already playing the game right now
+            List<Client> OtherPlayers = ClientManager.GetActiveClientsExceptFor(ClientID);
+            PacketWriter.WriteInteger(OtherPlayers.Count);  //how many other players are in the game
+            foreach(Client Other in OtherPlayers)
+            {
+                //Provide the information for each other player who is in the game
+                PacketWriter.WriteString(Other.CurrentCharacterName); //characters name 
+                //characters position
+                PacketWriter.WriteFloat(Other.CharacterPosition.x);
+                PacketWriter.WriteFloat(Other.CharacterPosition.y);
+                PacketWriter.WriteFloat(Other.CharacterPosition.z);
+            }
+            
+            //send the packet to the client
+            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        public static void SendSpawnOther(int ClientID, string CharacterName, Vector3 Position)
+        {
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.SpawnOtherPlayer);  //packet type
+            PacketWriter.WriteString(CharacterName);
+            PacketWriter.WriteFloat(Position.x);
+            PacketWriter.WriteFloat(Position.y);
+            PacketWriter.WriteFloat(Position.z);
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
             PacketWriter.Dispose();
         }
 
         //tells a client to update someone elses position info
-        public static void SendPlayerUpdatePosition(int ClientID, string CharacterName, Vector3 NewPosition)
+        public static void SendPlayerUpdatePosition(int ClientID, string CharacterName, Vector3 NewPosition, Vector4 NewRotation)
         {
             //Create the packet to send through the network
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
@@ -141,51 +161,19 @@ namespace Swaelo_Server
             PacketWriter.WriteFloat(NewPosition.x);
             PacketWriter.WriteFloat(NewPosition.y);
             PacketWriter.WriteFloat(NewPosition.z);
+            //wrote the rotation data
+            PacketWriter.WriteFloat(NewRotation.x);
+            PacketWriter.WriteFloat(NewRotation.y);
+            PacketWriter.WriteFloat(NewRotation.z);
+            PacketWriter.WriteFloat(NewRotation.w);
             //send the packet to the client
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
             //close the packet writer
             PacketWriter.Dispose();
         }
-
-        //tells a client to spawn someone elses character into their world
-        public static void SendSpawnOtherPlayer(int ClientID, string AccountName, CharacterData Data)
-        {
-            Console.WriteLine("instructing " + AccountName + " to spawn " + Data.Account + " character in their world");
-            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.SpawnOtherPlayer);  //packet type
-            PacketWriter.WriteString(Data.Account); //account name
-            PacketWriter.WriteFloat(Data.Position.x);   //character world position
-            PacketWriter.WriteFloat(Data.Position.y);
-            PacketWriter.WriteFloat(Data.Position.z);
-            PacketWriter.WriteString(Data.Name);    //character name
-            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
-            PacketWriter.Dispose();
-        }
-
-        //tells a client to spawn a list of other players to spawn into their world
-        public static void SendSpawnOtherPlayers(int ClientID, List<Client> OtherPlayers)
-        {
-            Console.WriteLine("telling the new client to spawn everyone else into their game world");
-            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
-            PacketWriter.WriteInteger((int)ServerPacketType.SpawnOtherPlayers);  //packet type
-            PacketWriter.WriteInteger(OtherPlayers.Count);  //amount of other clients to spawn in
-
-            //Loop through the list of other clients that need to be spawned in
-            foreach (Client Other in OtherPlayers)
-            {
-                //Write into the packet the information for each other player in the game right now
-                PacketWriter.WriteString(Other.AccountName);
-                PacketWriter.WriteFloat(Other.CharacterPosition.x);
-                PacketWriter.WriteFloat(Other.CharacterPosition.y);
-                PacketWriter.WriteFloat(Other.CharacterPosition.z);
-                PacketWriter.WriteString(Other.CurrentCharacterName);
-            }
-
-            //Now send the packet to the client and close the reader
-            ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
-            PacketWriter.Dispose();
-        }
-
+        
+        
+        
         //tells a client to remove someone elses character from their world
         public static void SendRemoveOtherPlayer(int ClientID, string CharacterName)
         {
@@ -194,6 +182,13 @@ namespace Swaelo_Server
             PacketWriter.WriteString(CharacterName);
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
             PacketWriter.Dispose();
+        }
+
+        //tells a list of clients to remove someones character from their world
+        public static void SendListRemoveOtherPlayer(List<Client> ClientList, string CharacterName)
+        {
+            foreach(Client C in ClientList)
+                SendRemoveOtherPlayer(C.ClientID, CharacterName);
         }
     }
 }

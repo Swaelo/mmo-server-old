@@ -16,7 +16,8 @@ public enum ClientPacketType
     EnterWorldRequest = 6,  //client wants to enter into the game world with their selected character
     GetCharacterDataRequest = 7,    //client wants info about all their created characters
 
-    PlayerUpdatePosition = 8    //client sent us their updated position data to be spread to everyone else
+    PlayerUpdatePosition = 8,   //spread a players position update info to other clients
+    PlayerDisconnectNotice = 9  //tell everyone else they stopped playing
 }
 
 namespace Swaelo_Server
@@ -38,6 +39,7 @@ namespace Swaelo_Server
             Packets.Add((int)ClientPacketType.GetCharacterDataRequest, HandleGetCharacterDataRequest);
 
             Packets.Add((int)ClientPacketType.PlayerUpdatePosition, HandlePlayerUpdate);
+            Packets.Add((int)ClientPacketType.PlayerDisconnectNotice, HandlePlayerDisconnect);
         }
 
         //Gets a packet from the client, passes it onto whatever function is registered to handle whatever type of packet it is
@@ -100,7 +102,6 @@ namespace Swaelo_Server
         //Clients send chat messages to us and we send them to everyone else
         public static void HandlePlayerMessage(int ClientID, byte[] PacketData)
         {
-            Console.WriteLine("a client has sent us their chat message");
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
             int PacketType = PacketReader.ReadInteger();
@@ -121,7 +122,6 @@ namespace Swaelo_Server
         //Gets a request from a client to register a new account <int:PacketType, string:Username, string:Password>
         public static void HandleRegisterRequest(int ClientID, byte[] PacketData)
         {
-            Console.WriteLine("trying to register a new account");
             //Extract the account credentials from the packet data
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
@@ -130,16 +130,14 @@ namespace Swaelo_Server
             string Pass = PacketReader.ReadString();
             PacketReader.Dispose();
             //Make sure the username provided doesnt contain any banned characters
-            if(!IsValidUsername(Name))
+            if (!IsValidUsername(Name))
             {
-                Console.WriteLine("Requested username " + Name + " contains banned characters, registration request denied");
                 PacketSender.SendRegisterReply(ClientID, false, "Username contains banned characters, only letters, numbers, dashes(-), periods(.) and underscores(_) are allowed");
                 return;
             }
             //Make sure the password provided doesnt contain any banned characters either
-            if(!IsValidUsername(Pass))
+            if (!IsValidUsername(Pass))
             {
-                Console.WriteLine("Requested password " + Pass + " contains banned characters, registration request denied");
                 PacketSender.SendRegisterReply(ClientID, false, "Password contains banned characters, only letters, numbers, dashes(-), periods(.) and underscores(_) are allowed");
                 return;
             }
@@ -147,7 +145,6 @@ namespace Swaelo_Server
             bool AccountExists = Globals.database.DoesAccountExist(ClientID, Name);
             if (AccountExists)
             {//if the account already exists we need to tell the user the name is already taken
-                Console.WriteLine(Name + " account already exists");
                 PacketSender.SendRegisterReply(ClientID, false, "This account name has already been taken");
                 return;
             }
@@ -173,7 +170,6 @@ namespace Swaelo_Server
         //Gets a request from a client to log into an account <int:PacketType, string:Username, string:Password>
         public static void HandleLoginRequest(int ClientID, byte[] PacketData)
         {
-            Console.WriteLine("client is trying to log into an account");
             //Extract the account credentials from the packet data
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
@@ -184,7 +180,7 @@ namespace Swaelo_Server
             //Make sure the user isnt trying to log into an account that doesnt exist
             bool AccountExists = Globals.database.DoesAccountExist(ClientID, Name);
             //If the account doesnt exist they cant log into it obviously
-            if(!AccountExists)
+            if (!AccountExists)
             {
                 PacketSender.SendLoginReply(ClientID, false, "That account does not exist");
                 return;
@@ -198,7 +194,7 @@ namespace Swaelo_Server
                 //Find out what account they are logged into
                 string AccountName = ExternalClient.AccountName;
                 //If this is the same account the players trying to log into, deny their request
-                if(Name == AccountName)
+                if (Name == AccountName)
                 {
                     PacketSender.SendLoginReply(ClientID, false, "Someone is already logged into that account");
                     return;
@@ -207,12 +203,12 @@ namespace Swaelo_Server
             //Now check they have given the correct password
             bool PasswordMatches = Globals.database.DoesPasswordMatch(ClientID, Name, Pass);
             //If the password is wrong they cant log into the account
-            if(!PasswordMatches)
+            if (!PasswordMatches)
             {
                 PacketSender.SendLoginReply(ClientID, false, "The password was incorrect");
                 return;
             }
-
+            Console.WriteLine(Name + " has logged in");
             PacketSender.SendLoginReply(ClientID, true, "Login success");
         }
 
@@ -232,7 +228,7 @@ namespace Swaelo_Server
             //Query the database to check if this character name has already been taken by someone else
             bool CharacterExists = Globals.database.DoesCharacterExist(ClientID, CharacterName);
             //If this character already exists, send the reply message telling them the name is already taken
-            if(CharacterExists)
+            if (CharacterExists)
             {
                 PacketSender.SendCreateCharacterReply(ClientID, false, "This character name is already taken");
                 return;
@@ -245,30 +241,26 @@ namespace Swaelo_Server
         //client wants to enter into the game world with their selected character
         public static void HandleEnterWorldRequest(int ClientID, byte[] PacketData)
         {
-            //Extract the data about the character wanting to enter into the game world
+            //Extract information from the packet and save it into this clients class in the client manager list
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
             int PacketType = PacketReader.ReadInteger();
-            CharacterData Data = new CharacterData();
-            Data.Account = PacketReader.ReadString();
-            Data.Name = PacketReader.ReadString();
-            Data.IsMale = PacketReader.ReadInteger() == 1;
-            Data.Position = new Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            Client Client = ClientManager.Clients[ClientID];
+            Client.AccountName = PacketReader.ReadString();
+            Client.InGame = true;
+            Client.CurrentCharacterName = PacketReader.ReadString();
+            Client.CharacterPosition = new Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
             PacketReader.Dispose();
 
-            //Tell this player to enter into the world with their desired character and save their info in their client class
-            PacketSender.SendPlayerEnterWorld(ClientID, Data);
-            ClientManager.Clients[ClientID].AccountName = Data.Account;
-            ClientManager.Clients[ClientID].InGame = true;
-            ClientManager.Clients[ClientID].CharacterPosition = new Vector3(0, 0, 0);
-            ClientManager.Clients[ClientID].CurrentCharacterName = Data.Name;
+            //Send this player into the world with their character now
+            Console.WriteLine(Client.AccountName + ":" + Client.CurrentCharacterName + " has entered the world");
+            PacketSender.SendPlayerEnterWorld(ClientID);
 
-            //Get a list of all the other active clients playing in the game right now
-            List<Client> OtherActiveClients = ClientManager.GetActiveClientsExceptFor(ClientID);
-            //Tell the new client to spawn in all of these clients characters into the world too
-            PacketSender.SendSpawnOtherPlayers(ClientID, OtherActiveClients);
-            //All of these others clients also need to be told to spawn this new clients character into their world too
-            foreach(Client OtherClient in OtherActiveClients) { PacketSender.SendSpawnOtherPlayer(OtherClient.ClientID, Data.Account, Data); }
+            //Any other players who are already playing the game need to be told to spawn this client
+            foreach(Client Other in ClientManager.GetActiveClientsExceptFor(ClientID))
+            {
+                PacketSender.SendSpawnOther(Other.ClientID, Client.CurrentCharacterName, Client.CharacterPosition);
+            }
         }
 
         //Sends to the client all the infor for any characters they have created so far
@@ -282,38 +274,53 @@ namespace Swaelo_Server
             PacketReader.Dispose();
             PacketSender.SendCharacterData(ClientID, Username);
         }
-        
+
         //Gets updated character information data from one of the connect clients, this needs to be sent out to everyone else so they know where that character is at
         public static void HandlePlayerUpdate(int ClientID, byte[] PacketData)
         {
-            //start the packet reader and give it the packet data information
+            //Extract the new position data from the network packet
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
-            //extract all the information from the packet
             int PacketType = PacketReader.ReadInteger();
             string CharacterName = PacketReader.ReadString();
-            //get position data
-            float PosX = PacketReader.ReadFloat();
-            float PosY = PacketReader.ReadFloat();
-            float PosZ = PacketReader.ReadFloat();
-            Vector3 NewPosition = new Vector3(PosX, PosY, PosZ);
-            //close the packet reader
+            Vector3 CharacterPosition = new Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            Vector4 CharacterRotation = new Vector4(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
             PacketReader.Dispose();
-            //update the client class with the characters new information
-            var Client = ClientManager.Clients[ClientID];
-            Client.CharacterPosition = NewPosition;
-            //send this new data out to all the other clients
-            foreach (var OtherClient in ClientManager.Clients)
-            {
-                //Grab this clients info out of the dictionary
-                int ID = OtherClient.Key;
-                Client ExternalClient = OtherClient.Value;
-                //clients who arent in the game world dont need to be told anything
-                if (!ExternalClient.InGame)
-                    continue;
-                //other active clients need to be sent this players new pos/rot data
-                PacketSender.SendPlayerUpdatePosition(ID, CharacterName, NewPosition);
-            }
+
+            //Store the players new information in their assigned client object
+            ClientManager.Clients[ClientID].CharacterPosition = CharacterPosition;
+
+            //Send this new data out to all of the other connected clients
+            List<Client> OtherClients = ClientManager.GetOtherClients(ClientID);
+            foreach (Client OtherClient in OtherClients)
+                PacketSender.SendPlayerUpdatePosition(OtherClient.ClientID, CharacterName, CharacterPosition, CharacterRotation);
+        }
+
+        public static void HandlePlayerDisconnect(int ClientID, byte[] PacketData)
+        {
+            //read the packet
+            ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
+            PacketReader.WriteBytes(PacketData);
+            int PacketType = PacketReader.ReadInteger();
+            PacketReader.Dispose();
+
+            //Find this clients info
+            Client DisconnectedClient = ClientManager.Clients[ClientID];
+            string Account = DisconnectedClient.AccountName;
+            string Character = DisconnectedClient.CurrentCharacterName;
+            Vector3 Position = DisconnectedClient.CharacterPosition;
+
+            //Open up the database and backup their characters world position
+            var DB = Globals.database;
+            var Rec = DB.recorder;
+            string UpdatePos = "UPDATE characters SET XPosition='" + Position.x + "', YPosition='" + Position.y + "', ZPosition='" + Position.z + "' WHERE CharacterName='" + Character + "'";
+            Rec.Open(UpdatePos, DB.connection, DB.cursorType, DB.lockType);
+
+            //Remove them from the client list, then tell all the other active players they have logged out
+            ClientManager.Clients.Remove(ClientID);
+            List<Client> ActiveClients = ClientManager.GetAllActiveClients();
+            PacketSender.SendListRemoveOtherPlayer(ActiveClients, Character);
+            Console.WriteLine(Account + ":" + Character + " has disconnected");
         }
     }
 }

@@ -8,3 +8,13 @@ C:\swaelo-server\Swaelo Server\obj\Debug\swaelo-server.csproj.CopyComplete
 C:\swaelo-server\Swaelo Server\obj\Debug\Swaelo Server.exe
 C:\swaelo-server\Swaelo Server\obj\Debug\Swaelo Server.pdb
 C:\swaelo-server\Swaelo Server\obj\Debug\swaelo-server.csprojAssemblyReference.cache
+C:\ascension-seekers\Server Project\Swaelo Server\obj\Debug\swaelo-server.csprojAssemblyReference.cache
+C:\ascension-seekers\Server Project\Swaelo Server\obj\Debug\Interop.ADODB.dll
+C:\ascension-seekers\Server Project\Swaelo Server\obj\Debug\swaelo-server.csproj.ResolveComReference.cache
+C:\ascension-seekers\Server Project\Swaelo Server\obj\Debug\swaelo-server.csproj.CoreCompileInputs.cache
+C:\ascension-seekers\Server Project\Swaelo Server\obj\Debug\Swaelo Server.exe
+C:\ascension-seekers\Server Project\Swaelo Server\obj\Debug\Swaelo Server.pdb
+C:\ascension-seekers\Server Project\Swaelo Server\bin\Debug\Swaelo Server.exe.config
+C:\ascension-seekers\Server Project\Swaelo Server\bin\Debug\Swaelo Server.exe
+C:\ascension-seekers\Server Project\Swaelo Server\bin\Debug\Swaelo Server.pdb
+C:\ascension-seekers\Server Project\Swaelo Server\obj\Debug\swaelo-server.csproj.CopyComplete
