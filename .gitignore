@@ -1,8 +1,4 @@
 /.git/*
 /.vs/*
-/Builds/*
-/Patches/*
-/Library/*
-/Logs/*
-/Packages/*
-/Temp/*
+/bin/*
+/obj/*
