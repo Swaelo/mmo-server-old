@@ -26,7 +26,6 @@ namespace Swaelo_Server
         //displays a message in the clients console log window
         public static void SendConsoleMessage(int ClientID, string Message)
         {
-            Console.WriteLine("Sending console message to client");
             //Create the packet to send through the network
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.ConsoleMessage);
@@ -45,6 +44,13 @@ namespace Swaelo_Server
             PacketWriter.WriteString(Message);
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
             PacketWriter.Dispose();
+        }
+
+        //Spreads a players message to everyone in a list of clients
+        public static void SendPlayersMessage(List<Client> TargetClients, string Sender, string Message)
+        {
+            foreach (Client OtherClient in TargetClients)
+                SendPlayerMessage(OtherClient.ClientID, Sender, Message);
         }
 
         //tells a client if their account was registered

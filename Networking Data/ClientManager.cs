@@ -63,6 +63,22 @@ namespace Swaelo_Server
             return OtherClients;
         }
 
+        //Checks if any client is logged in with this username
+        public static bool IsAccountLoggedIn(string AccountName)
+        {
+            //Check each client that is logged in
+            foreach(var Client in Clients)
+            {
+                //Get their account name
+                string ClientAccountName = Client.Value.AccountName;
+                //If it matches, then the account is logged in
+                if (AccountName == ClientAccountName)
+                    return true;
+            }
+            //If none of them matched, then the account is logged out
+            return false;
+        }
+
         //When a new client has connected to the server, map their connection into the dictionary
         public static void CreateNewConnection(TcpClient TempClient)
         {

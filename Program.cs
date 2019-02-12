@@ -12,6 +12,7 @@ namespace Swaelo_Server
             //Start the game server
             Server.InitializeServer();
             Globals.database.Connect();
+            //Console.ReadLine();
 
             using (var game = new DemosGame())
             {

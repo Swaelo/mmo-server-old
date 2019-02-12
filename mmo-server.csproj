@@ -475,20 +475,23 @@
     <Compile Include="BEPU\WheelSlidingFriction.cs" />
     <Compile Include="BEPU\WheelSuspension.cs" />
     <Compile Include="BEPU\WrappedShape.cs" />
-    <Compile Include="Server\CharacterData.cs" />
-    <Compile Include="Server\Client.cs" />
-    <Compile Include="Server\ClientManager.cs" />
-    <Compile Include="Server\Database.cs" />
-    <Compile Include="Server\GameItem.cs" />
-    <Compile Include="Server\Globals.cs" />
-    <Compile Include="Server\PacketReader.cs" />
-    <Compile Include="Server\PacketSender.cs" />
+    <Compile Include="Game Data\CharacterData.cs" />
+    <Compile Include="Game Data\RobertDatabase.cs" />
+    <Compile Include="Game Data\RobertSQL.cs" />
+    <Compile Include="Networking Data\Client.cs" />
+    <Compile Include="Networking Data\ClientManager.cs" />
+    <Compile Include="Game Data\Database.cs" />
+    <Compile Include="Game Data\GameItem.cs" />
+    <Compile Include="Game Data\GameWorld.cs" />
+    <Compile Include="Game Data\Globals.cs" />
+    <Compile Include="Server Logic\PacketReader.cs" />
+    <Compile Include="Server Logic\PacketSender.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Server\Server.cs" />
+    <Compile Include="Server Logic\Server.cs" />
     <Compile Include="Math\Vector3.cs" />
     <Compile Include="Math\Vector4.cs" />
-    <Compile Include="Server\WorldItems.cs" />
+    <Compile Include="Game Data\WorldItems.cs" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="ADODB">

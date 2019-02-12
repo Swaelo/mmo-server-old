@@ -15,7 +15,8 @@ public enum ClientPacketType
     GetCharacterDataRequest = 7,    //client wants info about all their created characters
 
     PlayerUpdatePosition = 8,   //spread a players position update info to other clients
-    PlayerDisconnectNotice = 9  //tell everyone else they stopped playing
+    PlayerDisconnectNotice = 9,  //tell everyone else they stopped playing
+    AccountLogoutNotice = 10    //let the server know we have logged out of this user account
 }
 
 namespace Swaelo_Server
@@ -38,6 +39,7 @@ namespace Swaelo_Server
 
             Packets.Add((int)ClientPacketType.PlayerUpdatePosition, HandlePlayerUpdate);
             Packets.Add((int)ClientPacketType.PlayerDisconnectNotice, HandlePlayerDisconnect);
+            Packets.Add((int)ClientPacketType.AccountLogoutNotice, HandleAccountLogout);
         }
 
         //Gets a packet from the client, passes it onto whatever function is registered to handle whatever type of packet it is
@@ -100,21 +102,16 @@ namespace Swaelo_Server
         //Clients send chat messages to us and we send them to everyone else
         public static void HandlePlayerMessage(int ClientID, byte[] PacketData)
         {
+            //Read the message info from the network packet
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
             int PacketType = PacketReader.ReadInteger();
             string CharacterName = PacketReader.ReadString();
             string Message = PacketReader.ReadString();
-            foreach (var OtherClient in ClientManager.Clients)
-            {
-                int ID = OtherClient.Key;
-                Client client = OtherClient.Value;
-                //Dont tell the client about themself
-                if (ID == ClientID)
-                    continue;
-                //Send the message to all the other clients
-                PacketSender.SendPlayerMessage(ID, CharacterName, Message);
-            }
+            PacketReader.Dispose();
+            //Send this message to all game client, except for the client who sent it
+            List<Client> OtherClients = ClientManager.GetActiveClientsExceptFor(ClientID);
+            PacketSender.SendPlayersMessage(OtherClients, CharacterName, Message);
         }
 
         //Gets a request from a client to register a new account <int:PacketType, string:Username, string:Password>
@@ -184,19 +181,10 @@ namespace Swaelo_Server
                 return;
             }
             //Make sure someone else isnt already logged into this account
-            foreach (var OtherClient in ClientManager.Clients)
+            if(ClientManager.IsAccountLoggedIn(Name))
             {
-                //Grab this clients info out of the dictionary
-                int ID = OtherClient.Key;
-                Client ExternalClient = OtherClient.Value;
-                //Find out what account they are logged into
-                string AccountName = ExternalClient.AccountName;
-                //If this is the same account the players trying to log into, deny their request
-                if (Name == AccountName)
-                {
-                    PacketSender.SendLoginReply(ClientID, false, "Someone is already logged into that account");
-                    return;
-                }
+                PacketSender.SendLoginReply(ClientID, false, "Someone is already logged into that account.");
+                return;
             }
             //Now check they have given the correct password
             bool PasswordMatches = Globals.database.DoesPasswordMatch(ClientID, Name, Pass);
@@ -207,7 +195,18 @@ namespace Swaelo_Server
                 return;
             }
             Console.WriteLine(Name + " has logged in");
+            ClientManager.Clients[ClientID].AccountName = Name;
             PacketSender.SendLoginReply(ClientID, true, "Login success");
+        }
+
+        public static void HandleAccountLogout(int ClientID, byte[] PacketData)
+        {
+            //Get this clients account information
+            Client Client = ClientManager.Clients[ClientID];
+            //Announce their logging out
+            Console.WriteLine(Client.AccountName + " has logged out");
+            Client.AccountName = "";
+            Client.CurrentCharacterName = "";
         }
 
         //Trys to create a new character for the user and tells them how it went

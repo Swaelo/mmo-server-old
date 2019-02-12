@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "swaelo-server", "Swaelo Server\swaelo-server.csproj", "{8D69FD50-667D-44FE-B282-8821BB4979A7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mmo-server", "mmo-server.csproj", "{8D69FD50-667D-44FE-B282-8821BB4979A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,6 +20,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {412FA340-34F0-4725-A815-68960310384D}
+		SolutionGuid = {6FD2DB65-E32F-4661-A00D-565B276C40C5}
 	EndGlobalSection
 EndGlobal
