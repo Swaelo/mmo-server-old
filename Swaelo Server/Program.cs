@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Timers;
 
 namespace Swaelo_Server
 {
@@ -6,10 +9,14 @@ namespace Swaelo_Server
     {
         static void Main(string[] args)
         {
-            Server.InitializeServer();  //start the game server
-            Globals.database.Connect(); //connect to the database
-           // Globals.ground_items.LoadGroundItems();
-            Console.ReadLine();
+            //Start the game server
+            Server.InitializeServer();
+            Globals.database.Connect();
+
+            using (var game = new DemosGame())
+            {
+                game.Run();
+            }
         }
     }
 }
