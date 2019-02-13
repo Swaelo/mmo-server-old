@@ -52,8 +52,8 @@ namespace Swaelo_Server
                 float currentAngle = i * angleIncrement;
 
                 //Using the parametric equation for an ellipse, compute the axis of rotation and angle.
-                Microsoft.Xna.Framework.Vector3 rotationAxis = MathConverter.Convert(LineObject.Basis.XAxis * LineObject.MaximumAngleX * (float)Math.Cos(currentAngle) +
-                                                             LineObject.Basis.YAxis * LineObject.MaximumAngleY * (float)Math.Sin(currentAngle));
+                Microsoft.Xna.Framework.Vector3 rotationAxis = MathConverter.Convert(LineObject.Basis.xAxis * LineObject.MaximumAngleX * (float)Math.Cos(currentAngle) +
+                                                             LineObject.Basis.yAxis * LineObject.MaximumAngleY * (float)Math.Sin(currentAngle));
                 float angle = rotationAxis.Length();
                 rotationAxis /= angle;
 

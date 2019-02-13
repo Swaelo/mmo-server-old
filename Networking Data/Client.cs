@@ -6,6 +6,7 @@ namespace Swaelo_Server
 {
     class Client
     {
+        public Sphere ServerCollider;
         public CharacterData CurrentCharacterData;
 
         public int ClientID;
@@ -17,7 +18,7 @@ namespace Swaelo_Server
         public string AccountName = "";
         public string CurrentCharacterName = "";
         public bool InGame = false;
-        public SwaeloMath.Vector3 CharacterPosition;
+        public Vector3 CharacterPosition;
         public bool IsMale = true;
 
         public void Start()
@@ -33,7 +34,15 @@ namespace Swaelo_Server
         private void ReadPacket(IAsyncResult result)
         {
             //Get the size of the packet
-            int PacketSize = ClientStream.EndRead(result);
+            int PacketSize = 0;
+            try
+            {
+                PacketSize = ClientStream.EndRead(result);
+            }
+            catch(System.IO.IOException e)
+            {
+                Console.WriteLine("That client isnt connected anymore");
+            }
 
             //0 bytes being received means the connection was closed by the client so we can shut down this connection now
             if(PacketSize == 0)

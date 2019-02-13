@@ -246,18 +246,24 @@ namespace Swaelo_Server
             Client.AccountName = PacketReader.ReadString();
             Client.InGame = true;
             Client.CurrentCharacterName = PacketReader.ReadString();
-            Client.CharacterPosition = new SwaeloMath.Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            Client.CharacterPosition = new Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
             PacketReader.Dispose();
 
             //Send this player into the world with their character now
             Console.WriteLine(Client.AccountName + ":" + Client.CurrentCharacterName + " has entered the world");
             PacketSender.SendPlayerEnterWorld(ClientID);
 
+            //Give information to the new player about any entities that are active in the world
+            PacketSender.SendActiveEntities(ClientID);
+
+            //Spawn a representation of this player in the server physics scene
+            Client.ServerCollider = new Sphere(Client.CharacterPosition, 1);
+            Globals.space.Add(Client.ServerCollider);
+            Globals.game.ModelDrawer.Add(Client.ServerCollider);
+
             //Any other players who are already playing the game need to be told to spawn this client
-            foreach(Client Other in ClientManager.GetActiveClientsExceptFor(ClientID))
-            {
-                PacketSender.SendSpawnOther(Other.ClientID, Client.CurrentCharacterName, Client.CharacterPosition);
-            }
+            List<Client> OtherActivePlayers = ClientManager.GetActiveClientsExceptFor(ClientID);
+            PacketSender.SendListSpawnOther(OtherActivePlayers, Client.CurrentCharacterName, Client.CharacterPosition);
         }
 
         //Sends to the client all the infor for any characters they have created so far
@@ -280,9 +286,13 @@ namespace Swaelo_Server
             PacketReader.WriteBytes(PacketData);
             int PacketType = PacketReader.ReadInteger();
             string CharacterName = PacketReader.ReadString();
-            SwaeloMath.Vector3 CharacterPosition = new SwaeloMath.Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
-            SwaeloMath.Vector4 CharacterRotation = new SwaeloMath.Vector4(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            Vector3 CharacterPosition = new Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            Quaternion CharacterRotation = new Quaternion(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
             PacketReader.Dispose();
+
+            //Update the position in the server physics scene
+            Client Client = ClientManager.Clients[ClientID];
+            Client.ServerCollider.Position = CharacterPosition;
 
             //Store the players new information in their assigned client object
             ClientManager.Clients[ClientID].CharacterPosition = CharacterPosition;
@@ -305,12 +315,15 @@ namespace Swaelo_Server
             Client DisconnectedClient = ClientManager.Clients[ClientID];
             string Account = DisconnectedClient.AccountName;
             string Character = DisconnectedClient.CurrentCharacterName;
-            SwaeloMath.Vector3 Position = DisconnectedClient.CharacterPosition;
+            Vector3 Position = DisconnectedClient.CharacterPosition;
+
+            //Remove them from the physics scene
+            Globals.space.Remove(DisconnectedClient.ServerCollider);
 
             //Open up the database and backup their characters world position
             var DB = Globals.database;
             var Rec = DB.recorder;
-            string UpdatePos = "UPDATE characters SET XPosition='" + Position.x + "', YPosition='" + Position.y + "', ZPosition='" + Position.z + "' WHERE CharacterName='" + Character + "'";
+            string UpdatePos = "UPDATE characters SET XPosition='" + Position.X + "', YPosition='" + Position.Y + "', ZPosition='" + Position.Z + "' WHERE CharacterName='" + Character + "'";
             Rec.Open(UpdatePos, DB.connection, DB.cursorType, DB.lockType);
 
             //Remove them from the client list, then tell all the other active players they have logged out

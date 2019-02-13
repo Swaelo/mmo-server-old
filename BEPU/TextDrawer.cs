@@ -92,7 +92,7 @@ namespace Swaelo_Server
             Draw(value, numPlaces, new Microsoft.Xna.Framework.Vector2(position.X + Font.MeasureString(text).X, position.Y));
         }
 
-        //These last bits are based on some sample code posted by Stephen Styrchak (http://forums.xna.com/forums/p/45512/271953.aspx).
+        //These last bits are based on some sample code posted by Stephen Styrchak (http://forums.Xna.com/forums/p/45512/271953.aspx).
 
         /// <summary>  
         /// Draws an integer.

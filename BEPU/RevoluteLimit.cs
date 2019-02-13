@@ -64,7 +64,7 @@ namespace Swaelo_Server
             basis.SetWorldAxes(limitedAxis, testAxis);
 
             //Put the axes into the 'joint transform' of B too.
-            TestAxis = basis.xAxis;
+            TestAxis = Basis.xAxis;
 
             MinimumAngle = minimumAngle;
             MaximumAngle = maximumAngle;
@@ -366,9 +366,9 @@ namespace Swaelo_Server
             //Rotate basisA y axis around the basisA primary axis.
             Matrix3x3 rotation;
             Matrix3x3.CreateFromAxisAngle(ref basis.primaryAxis, minimumAngle + MathHelper.PiOver2, out rotation);
-            Matrix3x3.Transform(ref basis.xAxis, ref rotation, out minPlaneNormal);
+            Matrix3x3.Transform(ref Basis.xAxis, ref rotation, out minPlaneNormal);
             Matrix3x3.CreateFromAxisAngle(ref basis.primaryAxis, maximumAngle - MathHelper.PiOver2, out rotation);
-            Matrix3x3.Transform(ref basis.xAxis, ref rotation, out maxPlaneNormal);
+            Matrix3x3.Transform(ref Basis.xAxis, ref rotation, out maxPlaneNormal);
 
             //Compute the errors along the two normals.
             float planePositionMin, planePositionMax;

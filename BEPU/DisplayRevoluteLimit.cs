@@ -48,11 +48,11 @@ namespace Swaelo_Server
             Microsoft.Xna.Framework.Vector3 left = MathConverter.Convert(LineObject.ConnectionB.Position - LineObject.Basis.PrimaryAxis);
             Microsoft.Xna.Framework.Vector3 right = MathConverter.Convert(LineObject.ConnectionB.Position + LineObject.Basis.PrimaryAxis);
 
-            Microsoft.Xna.Framework.Vector3 upwardsOffset = Microsoft.Xna.Framework.Vector3.TransformNormal(MathConverter.Convert(LineObject.Basis.XAxis), Microsoft.Xna.Framework.Matrix.CreateFromAxisAngle(MathConverter.Convert(LineObject.Basis.PrimaryAxis), LineObject.MaximumAngle));
+            Microsoft.Xna.Framework.Vector3 upwardsOffset = Microsoft.Xna.Framework.Vector3.TransformNormal(MathConverter.Convert(LineObject.Basis.xAxis), Microsoft.Xna.Framework.Matrix.CreateFromAxisAngle(MathConverter.Convert(LineObject.Basis.PrimaryAxis), LineObject.MaximumAngle));
             Microsoft.Xna.Framework.Vector3 topRightPosition = right + upwardsOffset;
             Microsoft.Xna.Framework.Vector3 topLeftPosition = left + upwardsOffset;
 
-            Microsoft.Xna.Framework.Vector3 downwardsOffset = Microsoft.Xna.Framework.Vector3.TransformNormal(MathConverter.Convert(LineObject.Basis.XAxis), Microsoft.Xna.Framework.Matrix.CreateFromAxisAngle(MathConverter.Convert(LineObject.Basis.PrimaryAxis), LineObject.MinimumAngle));
+            Microsoft.Xna.Framework.Vector3 downwardsOffset = Microsoft.Xna.Framework.Vector3.TransformNormal(MathConverter.Convert(LineObject.Basis.xAxis), Microsoft.Xna.Framework.Matrix.CreateFromAxisAngle(MathConverter.Convert(LineObject.Basis.PrimaryAxis), LineObject.MinimumAngle));
             Microsoft.Xna.Framework.Vector3 bottomRightPosition = right + downwardsOffset;
             Microsoft.Xna.Framework.Vector3 bottomLeftPosition = left + downwardsOffset;
 

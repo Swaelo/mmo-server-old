@@ -8,6 +8,7 @@ namespace Swaelo_Server
     {
         //Server socket for clients to connect to
         static TcpListener ServerSocket = new TcpListener(IPAddress.Any, 5500);
+        public static bool ServerOpen = true;
 
         public static void InitializeServer()
         {

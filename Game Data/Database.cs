@@ -67,7 +67,7 @@ namespace Swaelo_Server
             string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
             recorder.Open(Query, connection, cursorType, lockType);
             Data.Account = recorder.Fields["OwnerAccountName"].Value;
-            Data.Position = new SwaeloMath.Vector3(recorder.Fields["XPosition"].Value, recorder.Fields["YPosition"].Value, recorder.Fields["ZPosition"].Value);
+            Data.Position = new Vector3(recorder.Fields["XPosition"].Value, recorder.Fields["YPosition"].Value, recorder.Fields["ZPosition"].Value);
             Data.Name = CharacterName;
             Data.Experience = recorder.Fields["ExperiencePoints"].Value;
             Data.ExperienceToLevel = recorder.Fields["ExperienceTOLevel"].Value;
@@ -140,7 +140,7 @@ namespace Swaelo_Server
         }
 
         //Gets the character position data from a users account in the database
-        public SwaeloMath.Vector3 GetPlayerLocation(int ClientID, string AccountName)
+        public Vector3 GetPlayerLocation(int ClientID, string AccountName)
         {
             //Find the clients row in the account table
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
@@ -152,11 +152,11 @@ namespace Swaelo_Server
             //close the database
             recorder.Close();
             //return the position values
-            return new SwaeloMath.Vector3(XPos, YPos, ZPos);
+            return new Vector3(XPos, YPos, ZPos);
         }
 
         //Get the character rotation data from a users account in the database
-        public SwaeloMath.Vector4 GetPlayerRotation(int ClientID, string AccountName)
+        public Vector4 GetPlayerRotation(int ClientID, string AccountName)
         {
             //Find the clients row in the accounts table
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
@@ -169,7 +169,7 @@ namespace Swaelo_Server
             //close the database
             recorder.Close();
             //return the rotation values
-            return new SwaeloMath.Vector4(XRot, YRot, ZRot, WRot);
+            return new Vector4(XRot, YRot, ZRot, WRot);
         }
     }
 }

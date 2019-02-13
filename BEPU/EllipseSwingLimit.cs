@@ -272,9 +272,9 @@ namespace Swaelo_Server
             axisAngle.Z = axis.Z * angle;
 
             float angleX;
-            Vector3.Dot(ref axisAngle, ref basis.xAxis, out angleX);
+            Vector3.Dot(ref axisAngle, ref Basis.xAxis, out angleX);
             float angleY;
-            Vector3.Dot(ref axisAngle, ref basis.yAxis, out angleY);
+            Vector3.Dot(ref axisAngle, ref Basis.yAxis, out angleY);
 
 
             //The position constraint states that the angles must be within an ellipse. The following is just a reorganization of the x^2 / a^2 + y^2 / b^2 <= 1 definition of an ellipse's area.
@@ -322,8 +322,8 @@ namespace Swaelo_Server
             //Create a rotation which swings our basis 'out' to b's world orientation.
             Quaternion.Conjugate(ref relativeRotation, out relativeRotation);
             Vector3 sphereTangentX, sphereTangentY;
-            Quaternion.Transform(ref basis.xAxis, ref relativeRotation, out sphereTangentX);
-            Quaternion.Transform(ref basis.yAxis, ref relativeRotation, out sphereTangentY);
+            Quaternion.Transform(ref Basis.xAxis, ref relativeRotation, out sphereTangentX);
+            Quaternion.Transform(ref Basis.yAxis, ref relativeRotation, out sphereTangentY);
 
             Vector3.Multiply(ref sphereTangentX, tangent.X, out jacobianA); //not actually jA, just storing it there.
             Vector3.Multiply(ref sphereTangentY, tangent.Y, out jacobianB); //not actually jB, just storing it there.

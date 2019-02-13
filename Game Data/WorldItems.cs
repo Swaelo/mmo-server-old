@@ -30,12 +30,12 @@ namespace Swaelo_Server
                 double ItemID = rec.Fields["ItemID"].Value;
                 int ItemNumber = (int)rec.Fields["ItemNumber"].Value;
                 string ItemName = rec.Fields["ItemName"].Value;
-                SwaeloMath.Vector3 ItemPosition = new SwaeloMath.Vector3(rec.Fields["XPosition"].Value, rec.Fields["YPosition"].Value, rec.Fields["ZPosition"].Value);
-                SwaeloMath.Vector4 ItemRotation = new SwaeloMath.Vector4(rec.Fields["XRotation"].Value, rec.Fields["YRotation"].Value, rec.Fields["ZRotation"].Value, rec.Fields["WRotation"].Value);
+                Vector3 ItemPosition = new Vector3(rec.Fields["XPosition"].Value, rec.Fields["YPosition"].Value, rec.Fields["ZPosition"].Value);
+                Vector4 ItemRotation = new Vector4(rec.Fields["XRotation"].Value, rec.Fields["YRotation"].Value, rec.Fields["ZRotation"].Value, rec.Fields["WRotation"].Value);
                 //store all the info in a new object and add it to the list
                 GameItem NewItem = new GameItem((int)ItemID, ItemNumber, ItemName, ItemPosition, ItemRotation);
                 GroundItems.Add(NewItem);
-                Console.WriteLine(ItemName + " is on the ground at " + ItemPosition.x + ", " + ItemPosition.y + ", " + ItemPosition.z);
+                Console.WriteLine(ItemName + " is on the ground at " + ItemPosition.X + ", " + ItemPosition.Y + ", " + ItemPosition.Z);
                 rec.Close();
             }
         }

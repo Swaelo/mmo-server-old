@@ -198,7 +198,7 @@ namespace Swaelo_Server
 
 
             //Put the axes into the 'joint transform' of B too.
-            TestAxis = basis.xAxis;
+            TestAxis = Basis.xAxis;
         }
 
         ///<summary>
@@ -217,9 +217,9 @@ namespace Swaelo_Server
             {
                 float y, x;
                 Vector3 yAxis;
-                Vector3.Cross(ref basis.primaryAxis, ref basis.xAxis, out yAxis);
+                Vector3.Cross(ref basis.primaryAxis, ref Basis.xAxis, out yAxis);
                 Vector3.Dot(ref worldTestAxis, ref yAxis, out y);
-                Vector3.Dot(ref worldTestAxis, ref basis.xAxis, out x);
+                Vector3.Dot(ref worldTestAxis, ref Basis.xAxis, out x);
                 var angle = (float)Math.Atan2(y, x);
 
                 //****** VELOCITY BIAS ******//

@@ -1,4 +1,6 @@
-﻿namespace Swaelo_Server
+﻿using System;
+
+namespace Swaelo_Server
 {
     /// <summary>
     /// Ball-shaped object that can collide and move.  After making an entity, add it to a Space so that the engine can manage it.
@@ -53,6 +55,7 @@
             : this(radius)
         {
             Position = position;
+            Console.WriteLine("Sphere has been created");
         }
 
         /// <summary>

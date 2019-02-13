@@ -59,6 +59,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BEPU\Cone.cs" />
+    <Compile Include="BEPU\EntityMover.cs" />
+    <Compile Include="BEPU\EntityRotator.cs" />
+    <Compile Include="BEPU\QuaternionSlerpCurve.cs" />
+    <Compile Include="BEPU\SwingLimit.cs" />
+    <Compile Include="BEPU\TwistLimit.cs" />
+    <Compile Include="BEPU\UniversalJoint.cs" />
+    <Compile Include="Entities\EntityIDGenerator.cs" />
+    <Compile Include="Entities\IdleEntity.cs" />
+    <Compile Include="Entities\ServerEntity.cs" />
+    <Compile Include="Entities\EntityManager.cs" />
+    <Compile Include="Entities\PathFindingEntity.cs" />
+    <Compile Include="Entities\PrincessFox.cs" />
+    <Compile Include="Scene Navigation\CharacterCamera.cs" />
+    <Compile Include="Scene Navigation\CharacterInput.cs" />
+    <Compile Include="Scene Navigation\ChaseCamera.cs" />
+    <Compile Include="Scene Navigation\FreeCamera.cs" />
+    <Compile Include="ModelObject.cs" />
+    <Compile Include="WorldRenderer.cs" />
     <Compile Include="BEPU\AffineTransform.cs" />
     <Compile Include="BEPU\BallSocketJoint.cs" />
     <Compile Include="BEPU\BatchInformation.cs" />
@@ -478,20 +497,19 @@
     <Compile Include="Game Data\CharacterData.cs" />
     <Compile Include="Game Data\RobertDatabase.cs" />
     <Compile Include="Game Data\RobertSQL.cs" />
+    <Compile Include="WorldSimulator.cs" />
     <Compile Include="Networking Data\Client.cs" />
     <Compile Include="Networking Data\ClientManager.cs" />
     <Compile Include="Game Data\Database.cs" />
     <Compile Include="Game Data\GameItem.cs" />
-    <Compile Include="Game Data\GameWorld.cs" />
-    <Compile Include="Game Data\Globals.cs" />
+    <Compile Include="Globals.cs" />
     <Compile Include="Server Logic\PacketReader.cs" />
     <Compile Include="Server Logic\PacketSender.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server Logic\Server.cs" />
-    <Compile Include="Math\Vector3.cs" />
-    <Compile Include="Math\Vector4.cs" />
     <Compile Include="Game Data\WorldItems.cs" />
+    <Compile Include="WorldTerrain.cs" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="ADODB">
@@ -507,6 +525,7 @@
   <ItemGroup>
     <Content Include="Dependencies\ByteBuffer.dll" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Include="Content\360 thick sphere.xnb" />
     <None Include="Content\barrelandplatform.xnb" />
@@ -520,7 +539,10 @@
     <None Include="Content\fish.xnb" />
     <None Include="Content\guy.xnb" />
     <None Include="Content\hollowsphere.xnb" />
+    <None Include="Content\House.fbx" />
+    <None Include="Content\House.xnb" />
     <None Include="Content\InstancedEffect.xnb" />
+    <None Include="Content\mmo-server contents.mgcb" />
     <None Include="Content\playground.xnb" />
     <None Include="Content\TinyFont.xnb" />
     <None Include="Content\tube.xnb" />
@@ -529,6 +551,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(ProjectDir)Content\*.*" "$(SolutionDir)Swaelo Server\bin\Debug\Content" /Y /I /E</PostBuildEvent>
+    <PostBuildEvent>xcopy "$(ProjectDir)Content\*.*" "$(ProjectDir)bin\Debug\Content" /Y /I /E</PostBuildEvent>
   </PropertyGroup>
 </Project>
