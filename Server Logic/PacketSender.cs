@@ -131,14 +131,14 @@ namespace Swaelo_Server
             PacketWriter.WriteInteger(EntityCount);
             //Loop through each of the entities that are active in the scene right now
             List<ServerEntity> EntityList = EntityManager.GetEntityList();
-            foreach(ServerEntity Entity in EntityList)
+            foreach(ServerEntity entity in EntityList)
             {
                 //We need to save each entities ID, Type, and World Position
-                PacketWriter.WriteString(Entity.ID);
-                PacketWriter.WriteString(Entity.Type);
-                PacketWriter.WriteFloat(Entity.Entity.Position.X);
-                PacketWriter.WriteFloat(Entity.Entity.Position.Y);
-                PacketWriter.WriteFloat(Entity.Entity.Position.Z);
+                PacketWriter.WriteString(entity.ID);
+                PacketWriter.WriteString(entity.Type);
+                PacketWriter.WriteFloat(entity.entity.Position.X);
+                PacketWriter.WriteFloat(entity.entity.Position.Y);
+                PacketWriter.WriteFloat(entity.entity.Position.Z);
             }
             //Once the packet has all the information, close it and send it off to the client
             ClientManager.SendPacketTo(ClientID, PacketWriter.ToArray());
@@ -159,14 +159,14 @@ namespace Swaelo_Server
                 //Entity ID
                 PacketWriter.WriteString(Entity.ID);
                 //New Entity Position
-                PacketWriter.WriteFloat(Entity.Entity.Position.X);
-                PacketWriter.WriteFloat(Entity.Entity.Position.Y);
-                PacketWriter.WriteFloat(Entity.Entity.Position.Z);
+                PacketWriter.WriteFloat(Entity.entity.Position.X);
+                PacketWriter.WriteFloat(Entity.entity.Position.Y);
+                PacketWriter.WriteFloat(Entity.entity.Position.Z);
                 //Their rotation values too
-                PacketWriter.WriteFloat(Entity.Entity.Orientation.X);
-                PacketWriter.WriteFloat(Entity.Entity.Orientation.Y);
-                PacketWriter.WriteFloat(Entity.Entity.Orientation.Z);
-                PacketWriter.WriteFloat(Entity.Entity.Orientation.W);
+                PacketWriter.WriteFloat(Entity.entity.Orientation.X);
+                PacketWriter.WriteFloat(Entity.entity.Orientation.Y);
+                PacketWriter.WriteFloat(Entity.entity.Orientation.Z);
+                PacketWriter.WriteFloat(Entity.entity.Orientation.W);
             }
             //The packet is ready, now send it to everyone in the list
             foreach (Client Client in ClientList)

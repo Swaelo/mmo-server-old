@@ -10,12 +10,13 @@ namespace Swaelo_Server
     {
         static void Main(string[] args)
         {
-            //Register and run the networking communication thread
+            //Network Socket Communication is all handled on the first thread
             Thread NetworkingThread = new Thread(new ParameterizedThreadStart(NetworkingThreadProc));
             NetworkingThreadEndDelegate NetworkingEndDelegate = NetworkingThreadEnd;
             NetworkingThread.Start(NetworkingEndDelegate);
 
-            //Do the same with the physics simulation thread
+            //Physics Simulation and Server Logic is processed on the second thread
+            //Rendering is also done on this thread while debugging
             Thread PhysicsThread = new Thread(new ParameterizedThreadStart(PhysicsThreadProc));
             PhysicsThreadEndDelegate PhysicsEndDelegate = PhysicsThreadEnd;
             PhysicsThread.Start(PhysicsEndDelegate);

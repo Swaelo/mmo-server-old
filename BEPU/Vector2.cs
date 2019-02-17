@@ -53,6 +53,11 @@ namespace Swaelo_Server
             return "{" + X + ", " + Y + "}";
         }
 
+        public string Print()
+        {
+            return X + ", " + Y;
+        }
+
         /// <summary>
         /// Adds two vectors together.
         /// </summary>

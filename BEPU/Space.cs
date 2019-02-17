@@ -283,7 +283,6 @@ namespace Swaelo_Server
             Entity entity = spaceObject as Entity;
             if (entity != null)
             {
-                Console.WriteLine("a new entity has been added to the space");
                 BufferedStates.Add(entity);
             }
 

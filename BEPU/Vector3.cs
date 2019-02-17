@@ -33,6 +33,11 @@ namespace Swaelo_Server
             this.Z = z;
         }
 
+        public string Print()
+        {
+            return X + ", " + Y + ", " + Z;
+        }
+
         /// <summary>
         /// Constructs a new 3d vector.
         /// </summary>

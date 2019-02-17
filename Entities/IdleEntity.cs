@@ -7,8 +7,8 @@ namespace Swaelo_Server
         public IdleEntity(Vector3 SpawnPosition)
         {
             Type = "Beetle";
-            Entity = new Box(SpawnPosition, 1, 1, 1);
-            Globals.space.Add(Entity);
+            entity = new Box(SpawnPosition, 1, 1, 1);
+            Globals.space.Add(entity);
         }
     }
 }

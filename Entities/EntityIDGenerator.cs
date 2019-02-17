@@ -6,8 +6,8 @@ namespace Swaelo_Server
     internal static class EntityIDGenerator
     {
         private static readonly string Encode = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
-        private static long PreviousID = DateTime.UtcNow.Ticks;
-        public static string GetNextID() => GenerateEntityID(Interlocked.Increment(ref PreviousID));
+        private static long PreviousEntityID = DateTime.UtcNow.Ticks;
+        public static string GetNextID() => GenerateEntityID(Interlocked.Increment(ref PreviousEntityID));
         private static unsafe string GenerateEntityID(long ID)
         {
             char* CharBuffer = stackalloc char[13];

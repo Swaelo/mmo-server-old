@@ -59,6 +59,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entities\GameEntity.cs" />
+    <Compile Include="Scene Navigation\NavMeshDictionary.cs" />
+    <Compile Include="Scene Navigation\NavMeshNodes.cs" />
+    <Compile Include="Server Logic\AStarSearch.cs" />
     <Compile Include="BEPU\Cone.cs" />
     <Compile Include="BEPU\EntityMover.cs" />
     <Compile Include="BEPU\EntityRotator.cs" />
@@ -66,17 +70,25 @@
     <Compile Include="BEPU\SwingLimit.cs" />
     <Compile Include="BEPU\TwistLimit.cs" />
     <Compile Include="BEPU\UniversalJoint.cs" />
+    <Compile Include="Debug\Log.cs" />
     <Compile Include="Entities\EntityIDGenerator.cs" />
     <Compile Include="Entities\IdleEntity.cs" />
     <Compile Include="Entities\ServerEntity.cs" />
     <Compile Include="Entities\EntityManager.cs" />
     <Compile Include="Entities\PathFindingEntity.cs" />
-    <Compile Include="Entities\PrincessFox.cs" />
+    <Compile Include="Game Data\IDPair.cs" />
+    <Compile Include="OrderedList\ListObject.cs" />
+    <Compile Include="OrderedList\OrderedList.cs" />
     <Compile Include="Scene Navigation\CharacterCamera.cs" />
     <Compile Include="Scene Navigation\CharacterInput.cs" />
     <Compile Include="Scene Navigation\ChaseCamera.cs" />
     <Compile Include="Scene Navigation\FreeCamera.cs" />
-    <Compile Include="ModelObject.cs" />
+    <Compile Include="Game Data\ModelObject.cs" />
+    <Compile Include="Scene Navigation\NavMeshManager.cs" />
+    <Compile Include="Scene Navigation\NavMeshNode.cs" />
+    <Compile Include="Scene Navigation\NavMeshNodeIDGenerator.cs" />
+    <Compile Include="Server Logic\ServerPhysics.cs" />
+    <Compile Include="Server Logic\ServerTerrainCollision.cs" />
     <Compile Include="WorldRenderer.cs" />
     <Compile Include="BEPU\AffineTransform.cs" />
     <Compile Include="BEPU\BallSocketJoint.cs" />
@@ -502,7 +514,7 @@
     <Compile Include="Networking Data\ClientManager.cs" />
     <Compile Include="Game Data\Database.cs" />
     <Compile Include="Game Data\GameItem.cs" />
-    <Compile Include="Globals.cs" />
+    <Compile Include="Game Data\Globals.cs" />
     <Compile Include="Server Logic\PacketReader.cs" />
     <Compile Include="Server Logic\PacketSender.cs" />
     <Compile Include="Program.cs" />

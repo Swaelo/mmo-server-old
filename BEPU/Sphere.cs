@@ -55,7 +55,6 @@ namespace Swaelo_Server
             : this(radius)
         {
             Position = position;
-            Console.WriteLine("Sphere has been created");
         }
 
         /// <summary>

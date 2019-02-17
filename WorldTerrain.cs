@@ -37,31 +37,6 @@ namespace Swaelo_Server
                 new Vector3(-XLength * XSpacing / 2, 0, -ZLength * ZSpacing / 2)));
             terrain.Shape.QuadTriangleOrganization = QuadTriangleOrganization.BottomLeftUpperRight;
             terrain.Thickness = 5;
-            /*
-            float LengthSpacing = 8f;
-            float WidthSpacing = 8f;
-            //x and y, in terms of heightmaps, refer to their local x and y coordinates.  In world space, they correspond to x and z.
-            //Setup the heights of the terrain.
-            //[The size here is limited by the Reach profile the demos use- the drawer draws the terrain as a big block and runs into primitive drawing limits.
-            //The physics can support far larger terrains!]
-            heights = new float[Width, Length];
-            for(int WidthIter = 0; WidthIter < Width; WidthIter++)
-            {
-                for(int LengthIter = 0; LengthIter < Length; LengthIter++)
-                {
-                    float x = WidthIter - Width / 2;
-                    float z = LengthIter - Length / 2;
-                    heights[WidthIter, LengthIter] = (float)(10 * (Math.Sin(x / 8) + Math.Sin(z / 8)));
-                }
-            }
-
-            //Create the terrain
-            terrain = new Terrain(heights, new AffineTransform(
-                new Vector3(WidthSpacing, 1, LengthSpacing),
-                Quaternion.Identity,
-                new Vector3(-Width * WidthSpacing / 2, 0, -Length * LengthSpacing / 2)));
-            terrain.Shape.QuadTriangleOrganization = QuadTriangleOrganization.BottomRightUpperLeft;
-            */
         }
     }
 }
