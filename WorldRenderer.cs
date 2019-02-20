@@ -201,6 +201,119 @@ namespace Swaelo_Server
                 Console.WriteLine("Cam: " + CameraPosition);
             }
 
+            ////raycast down to find terrain location
+            //if (WasKeyPressed(Keys.F2))
+            //{
+            //    //Get the fox entity that we want to raycast from
+            //    ServerEntity Fox = EntityManager.GetServerEntity("PrincessFox");
+            //    Console.WriteLine("Fox is at " + Fox.entity.Position);
+            //    Vector3 RaycastOrigin = Fox.entity.Position;
+            //    Vector3 RaycastDirection = Vector3.Down;
+            //    RayCastResult Results;
+            //    bool RaycastHitSomething = Globals.space.RayCast(new Ray(RaycastOrigin, RaycastDirection), 10000, out Results);
+            //    Vector3 HitLocation = Results.HitData.Location;
+            //    Console.WriteLine("Ground raycast hit at " + HitLocation);
+            //    Vector3[] TVerts = Globals.TerrainVerts;
+            //    Console.WriteLine(TVerts.Length + " verts in the terrain");
+
+            //    //Sort through the list of nav mesh node locations that we loaded from the terrain meshes vertex data
+            //    for (int i = 0; i < TVerts.Length; i++)
+            //    {
+            //        //Make sure locations are unique before adding new
+            //        if (!NavMeshManager.IsNodeLocationAvailable(TVerts[i]))
+            //            continue;
+
+            //        float VertDistance;
+            //        if (i < TVerts.Length - 1)
+            //            VertDistance = Vector3.Distance(TVerts[i], TVerts[i + 1]);
+            //        else
+            //            VertDistance = Vector3.Distance(TVerts[i], TVerts[i - 1]);
+            //        //Check the location of each vertex to see if we should place a new nav mesh node here or not
+            //        Vector3 NodeLocation = TVerts[i];
+            //        NavMeshManager.AddNewNode(NodeLocation);
+
+            //    }
+
+            //    //Map all the nodes into the dictionary by their index in the navmesh
+            //    List<NavMeshNode> NodeList = NavMeshManager.GetNodeList();
+            //    //Dictionary<Vector2, NavMeshNode> NavMeshNodes = new Dictionary<Vector2, NavMeshNode>();
+
+            //    //Add the first column of nav mesh nodes
+            //    for (int i = 1; i < 10; i++)
+            //    {
+            //        Vector2 NavMeshIndex = new Vector2(i, 1);
+            //        int MeshNodeIndex = (i - 1) * 2;
+            //        NavMeshNode MeshNode = NodeList[MeshNodeIndex];
+            //        MeshNode.NodeIndex = NavMeshIndex;
+            //        NavMeshManager.AddNode(NavMeshIndex, MeshNode);
+            //    }
+            //    //Then add the second column of nodes
+            //    int CurrentNodeIndex = 1;
+            //    for (int i = 1; i < 10; i++)
+            //    {
+            //        Vector2 NavMeshIndex = new Vector2(i, 2);
+            //        int MeshNodeIndex = CurrentNodeIndex;
+            //        CurrentNodeIndex += 2;
+            //        NavMeshNode MeshNode = NodeList[MeshNodeIndex];
+            //        MeshNode.NodeIndex = NavMeshIndex;
+            //        NavMeshManager.AddNode(NavMeshIndex, MeshNode);
+            //    }
+            //    //Now add the rest of the columns (columns 3-9)
+            //    int NodeListIndex = 18;
+            //    for (int CurrentColumn = 3; CurrentColumn < 10; CurrentColumn++)
+            //    {
+            //        for (int j = 1; j < 10; j++)
+            //        {
+            //            Vector2 NavMeshIndex = new Vector2(j, CurrentColumn);
+            //            NavMeshNode MeshNode = NodeList[NodeListIndex];
+            //            MeshNode.NodeIndex = NavMeshIndex;
+            //            NodeListIndex++;
+            //            NavMeshManager.AddNode(NavMeshIndex, MeshNode);
+            //        }
+            //    }
+
+            //    //Get the path start and end nodes
+            //    Vector2 PathStartIndex = new Vector2(3, 4);
+            //    NavMeshNode PathStartNode = NavMeshManager.GetNode(PathStartIndex);
+            //    //NavMeshNode PathStartNode = NavMeshNodes[PathStartIndex];
+            //    Vector2 PathEndIndex = new Vector2(7, 8);
+            //    //NavMeshNode PathEndNode = NavMeshNodes[PathEndIndex];
+            //    NavMeshNode PathEndNode = NavMeshManager.GetNode(PathEndIndex);
+
+            //    //Use A* Search to find a path between the start and end nodes
+            //    List<NavMeshNode> NodePath = AStarSearch.FindPath(PathStartNode, PathEndNode, new Vector2(9, 9));
+            //    //Assign this path to the princess fox entity, have it navigate along the path until it reaches its target
+
+            //}
+
+            //returns which nav mesh node in the list is closest to the given location
+            NavMeshNode GetClosestNode(List<NavMeshNode> NodeList, Vector3 NodeLocation)
+            {
+                //Start off with the first node in the list being the closest node
+                NavMeshNode ClosestNode = NodeList[0];
+                float NodeDistance = Vector3.Distance(ClosestNode.NodeLocation, NodeLocation);
+                //Compare all the others keep track of which is the closest of them all
+                for(int i = 1; i < NodeList.Count; i++)
+                {
+                    NavMeshNode NodeCompare = NodeList[i];
+                    float CompareDistance = Vector3.Distance(ClosestNode.NodeLocation, NodeCompare.NodeLocation);
+                    if(CompareDistance < NodeDistance)
+                    {
+                        ClosestNode = NodeCompare;
+                        NodeDistance = CompareDistance;
+                    }
+                }
+                return ClosestNode;
+            }
+
+            
+            //move fox forward
+            if (WasKeyPressed(Keys.NumPad8))
+            {
+                ServerEntity Fox = EntityManager.GetServerEntity("PrincessFox");
+                
+            }
+
             //Tab toggle mouse lock
             if (WasKeyPressed(Keys.Tab))
                 IsMouseVisible = !IsMouseVisible;
