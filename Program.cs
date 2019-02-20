@@ -29,6 +29,7 @@ namespace Swaelo_Server
             //Perform all the servers networking tasks in this thread
             Server.InitializeServer();
             Globals.database.Connect();
+            Console.ReadLine();
 
             //Have the thread tell the main program when its finished
             NetworkingThreadEndDelegate NetworkingEndDelegate = Data as NetworkingThreadEndDelegate;

@@ -27,7 +27,7 @@ namespace Swaelo_Server
         /// <param name="colorA">Initial color of the first vertex of the line.</param>
         /// <param name="colorB">Initial color of the second vertex of the line.</param>
         /// <param name="drawer">System responsible for drawing this line.</param>
-        public Line(Microsoft.Xna.Framework.Vector3 positionA, Microsoft.Xna.Framework.Vector3 positionB, Color colorA, Color colorB, LineDrawer drawer)
+        public Line(Microsoft.Xna.Framework.Vector3 positionA, Microsoft.Xna.Framework.Vector3 positionB, Microsoft.Xna.Framework.Color colorA, Microsoft.Xna.Framework.Color colorB, LineDrawer drawer)
         {
             this.drawer = drawer;
             drawer.GetNewLineIndex(out IndexA);
@@ -44,7 +44,7 @@ namespace Swaelo_Server
         /// <param name="colorA">Initial color of the first vertex of the line.</param>
         /// <param name="colorB">Initial color of the second vertex of the line.</param>
         /// <param name="drawer">System responsible for drawing this line.</param>
-        public Line(Color colorA, Color colorB, LineDrawer drawer)
+        public Line(Microsoft.Xna.Framework.Color colorA, Microsoft.Xna.Framework.Color colorB, LineDrawer drawer)
         {
             this.drawer = drawer;
             drawer.GetNewLineIndex(out IndexA);
@@ -76,7 +76,7 @@ namespace Swaelo_Server
         /// <summary>
         /// Gets and sets the color of the first vertex of the line.
         /// </summary>
-        public Color ColorA
+        public Microsoft.Xna.Framework.Color ColorA
         {
             get { return drawer.vertices[IndexA].Color; }
             set { drawer.vertices[IndexA].Color = value; }
@@ -85,7 +85,7 @@ namespace Swaelo_Server
         /// <summary>
         /// Gets and sets the color of the second vertex of the line.
         /// </summary>
-        public Color ColorB
+        public Microsoft.Xna.Framework.Color ColorB
         {
             get { return drawer.vertices[IndexB].Color; }
             set { drawer.vertices[IndexB].Color = value; }

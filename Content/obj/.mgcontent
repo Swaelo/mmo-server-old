@@ -4,7 +4,7 @@
   <Platform>Windows</Platform>
   <Config />
   <SourceFiles>
-    <File>C:/mmo-server/Content/LowDetailTerrain.fbx</File>
+    <File>C:/mmo-server/Content/tera.fbx</File>
   </SourceFiles>
   <DestFiles>
     <File xsi:nil="true" />

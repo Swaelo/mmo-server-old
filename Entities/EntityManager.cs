@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,68 +7,42 @@ using System.Threading.Tasks;
 
 namespace Swaelo_Server
 {
-    public class EntityManager
+    public static class EntityManager
     {
-        //Stores a list of each entity active in the game right now, sorted by their ID's
-        public static Dictionary<string, ServerEntity> ActiveEntities = new Dictionary<string, ServerEntity>();
-        public static Dictionary<string, ServerEntity> SecretNameEntities = new Dictionary<string, ServerEntity>();
-        
-        //Stores a new entity into the dictionary
-        public static void AddNewEntity(ServerEntity NewEntity)
+        //Store a list of all entities currently active in the game world
+        public static List<BaseEntity> ActiveEntities = new List<BaseEntity>();
+
+        //Simply add an entity into the list with the rest of them
+        public static void AddEntity(BaseEntity NewEntity)
         {
-            NewEntity.previousUpdatePosition = NewEntity.entity.Position;
+            ActiveEntities.Add(NewEntity);
             NewEntity.ID = EntityIDGenerator.GetNextID();
-            ActiveEntities.Add(NewEntity.ID, NewEntity);
         }
+    }
 
-        //Stores a new entity into the dictionary, with the special name to find it
-        public static void AddNewEntity(ServerEntity NewEntity, string SecretName)
+    internal static class EntityIDGenerator
+    {
+        private static readonly string Encode = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+        private static long PreviousID = DateTime.UtcNow.Ticks;
+        public static string GetNextID() => GenerateEntityID(Interlocked.Increment(ref PreviousID));
+        private static unsafe string GenerateEntityID(long ID)
         {
-            NewEntity.previousUpdatePosition = NewEntity.entity.Position;
-            NewEntity.ID = EntityIDGenerator.GetNextID();
-            ActiveEntities.Add(NewEntity.ID, NewEntity);
-            SecretNameEntities.Add(SecretName, NewEntity);
-        }
+            char* CharBuffer = stackalloc char[13];
+            CharBuffer[0] = Encode[(int)(ID >> 60) & 31];
+            CharBuffer[1] = Encode[(int)(ID >> 55) & 31];
+            CharBuffer[2] = Encode[(int)(ID >> 50) & 31];
+            CharBuffer[3] = Encode[(int)(ID >> 45) & 31];
+            CharBuffer[4] = Encode[(int)(ID >> 40) & 31];
+            CharBuffer[5] = Encode[(int)(ID >> 35) & 31];
+            CharBuffer[6] = Encode[(int)(ID >> 30) & 31];
+            CharBuffer[7] = Encode[(int)(ID >> 25) & 31];
+            CharBuffer[8] = Encode[(int)(ID >> 20) & 31];
+            CharBuffer[9] = Encode[(int)(ID >> 15) & 31];
+            CharBuffer[10] = Encode[(int)(ID >> 10) & 31];
+            CharBuffer[11] = Encode[(int)(ID >> 5) & 31];
+            CharBuffer[12] = Encode[(int)ID & 31];
 
-        //Return an entity from its secret name
-        public static ServerEntity GetServerEntity(string SecretName)
-        {
-            return SecretNameEntities[SecretName];
-        }
-
-        //Returns all entities in a list
-        public static List<ServerEntity> GetEntityList()
-        {
-            List<ServerEntity> EntityList = new List<ServerEntity>();
-            foreach(var Entity in ActiveEntities)
-                EntityList.Add(Entity.Value);
-            return EntityList;
-        }
-
-        //Updates all entities on their current behaviour trees
-        public static void UpdateEntities(float DeltaTime)
-        {
-
-        }
-
-        //Returns a list of all entities who have moved to a new position since their last update
-        public static List<ServerEntity> GetOutOfDateEntities()
-        {
-            //Make a list of entities who have moved
-            List<ServerEntity> EntityList = new List<ServerEntity>();
-            //We will need to check up on every entity that is active right now
-            foreach(var Entity in ActiveEntities)
-            {
-                //If they havnt moved we wont add them into the update list
-                if (Entity.Value.entity.Position == Entity.Value.previousUpdatePosition)
-                    continue;
-                //All the others are at new locations so must be added to the list
-                EntityList.Add(Entity.Value);
-                //Whenever entities are added into the update list, they need to update their previous position value
-                Entity.Value.previousUpdatePosition = Entity.Value.entity.Position;
-            }
-            //Return the list of clients who need updating
-            return EntityList;
+            return new string(CharBuffer, 0, 13);
         }
     }
 }

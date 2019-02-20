@@ -8,12 +8,27 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Swaelo_Server</RootNamespace>
     <AssemblyName>Swaelo Server</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -41,10 +56,6 @@
     <Reference Include="ByteBuffer">
       <HintPath>..\..\..\Game Server\Server\Server\ByteBuffer.dll</HintPath>
     </Reference>
-    <Reference Include="Interop.ADODB">
-      <HintPath>..\..\..\Game Server\Game Server\Interop.ADODB.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="MonoGame.Framework, Version=3.7.1.189, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Dependencies\MonoGame\Tools\MonoGame.Framework.dll</HintPath>
@@ -59,10 +70,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Entities\GameEntity.cs" />
-    <Compile Include="Scene Navigation\NavMeshDictionary.cs" />
-    <Compile Include="Scene Navigation\NavMeshNodes.cs" />
-    <Compile Include="Server Logic\AStarSearch.cs" />
+    <Compile Include="Entities\BaseEntity.cs" />
+    <Compile Include="Entities\FSMEntity.cs" />
+    <Compile Include="Entities\StaticEntity.cs" />
+    <Compile Include="Pathfinding\NavMeshDictionary.cs" />
+    <Compile Include="Pathfinding\NavMeshNodes.cs" />
+    <Compile Include="Pathfinding\AStarSearch.cs" />
     <Compile Include="BEPU\Cone.cs" />
     <Compile Include="BEPU\EntityMover.cs" />
     <Compile Include="BEPU\EntityRotator.cs" />
@@ -71,24 +84,13 @@
     <Compile Include="BEPU\TwistLimit.cs" />
     <Compile Include="BEPU\UniversalJoint.cs" />
     <Compile Include="Debug\Log.cs" />
-    <Compile Include="Entities\EntityIDGenerator.cs" />
-    <Compile Include="Entities\IdleEntity.cs" />
-    <Compile Include="Entities\ServerEntity.cs" />
     <Compile Include="Entities\EntityManager.cs" />
-    <Compile Include="Entities\PathFindingEntity.cs" />
-    <Compile Include="Game Data\IDPair.cs" />
-    <Compile Include="OrderedList\ListObject.cs" />
-    <Compile Include="OrderedList\OrderedList.cs" />
-    <Compile Include="Scene Navigation\CharacterCamera.cs" />
-    <Compile Include="Scene Navigation\CharacterInput.cs" />
-    <Compile Include="Scene Navigation\ChaseCamera.cs" />
-    <Compile Include="Scene Navigation\FreeCamera.cs" />
-    <Compile Include="Game Data\ModelObject.cs" />
-    <Compile Include="Scene Navigation\NavMeshManager.cs" />
-    <Compile Include="Scene Navigation\NavMeshNode.cs" />
-    <Compile Include="Scene Navigation\NavMeshNodeIDGenerator.cs" />
-    <Compile Include="Server Logic\ServerPhysics.cs" />
-    <Compile Include="Server Logic\ServerTerrainCollision.cs" />
+    <Compile Include="Camera Types\CharacterCamera.cs" />
+    <Compile Include="Camera Types\CharacterInput.cs" />
+    <Compile Include="Camera Types\ChaseCamera.cs" />
+    <Compile Include="Camera Types\FreeCamera.cs" />
+    <Compile Include="Server Data\ModelObject.cs" />
+    <Compile Include="Pathfinding\NavMeshNode.cs" />
     <Compile Include="WorldRenderer.cs" />
     <Compile Include="BEPU\AffineTransform.cs" />
     <Compile Include="BEPU\BallSocketJoint.cs" />
@@ -506,22 +508,19 @@
     <Compile Include="BEPU\WheelSlidingFriction.cs" />
     <Compile Include="BEPU\WheelSuspension.cs" />
     <Compile Include="BEPU\WrappedShape.cs" />
-    <Compile Include="Game Data\CharacterData.cs" />
-    <Compile Include="Game Data\RobertDatabase.cs" />
-    <Compile Include="Game Data\RobertSQL.cs" />
+    <Compile Include="Server Data\CharacterData.cs" />
     <Compile Include="WorldSimulator.cs" />
-    <Compile Include="Networking Data\Client.cs" />
-    <Compile Include="Networking Data\ClientManager.cs" />
-    <Compile Include="Game Data\Database.cs" />
-    <Compile Include="Game Data\GameItem.cs" />
-    <Compile Include="Game Data\Globals.cs" />
-    <Compile Include="Server Logic\PacketReader.cs" />
-    <Compile Include="Server Logic\PacketSender.cs" />
+    <Compile Include="Networking\Client.cs" />
+    <Compile Include="Networking\ClientManager.cs" />
+    <Compile Include="Server Data\Database.cs" />
+    <Compile Include="Server Data\GameItem.cs" />
+    <Compile Include="Globals.cs" />
+    <Compile Include="Networking\PacketReader.cs" />
+    <Compile Include="Networking\PacketSender.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Server Logic\Server.cs" />
-    <Compile Include="Game Data\WorldItems.cs" />
-    <Compile Include="WorldTerrain.cs" />
+    <Compile Include="Networking\Server.cs" />
+    <Compile Include="Server Data\WorldItems.cs" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="ADODB">
@@ -537,8 +536,11 @@
   <ItemGroup>
     <Content Include="Dependencies\ByteBuffer.dll" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
     <None Include="Content\360 thick sphere.xnb" />
     <None Include="Content\barrelandplatform.xnb" />
     <None Include="Content\bepubox.xnb" />
@@ -560,6 +562,18 @@
     <None Include="Content\tube.xnb" />
     <None Include="Content\wheel.xnb" />
     <None Include="Content\whitePixel.xnb" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.6.1">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.6.1 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
