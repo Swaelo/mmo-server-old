@@ -16,8 +16,9 @@ public enum ClientPacketType
     GetCharacterDataRequest = 7,    //client wants info about all their created characters
 
     PlayerUpdatePosition = 8,   //spread a players position update info to other clients
-    PlayerDisconnectNotice = 9,  //tell everyone else they stopped playing
-    AccountLogoutNotice = 10    //let the server know we have logged out of this user account
+    PlayerMeleeAttack = 9,
+    PlayerDisconnectNotice = 10,  //tell everyone else they stopped playing
+    AccountLogoutNotice = 11    //let the server know we have logged out of this user account
 }
 
 namespace Swaelo_Server
@@ -45,6 +46,7 @@ namespace Swaelo_Server
             Packets.Add((int)ClientPacketType.GetCharacterDataRequest, HandleGetCharacterDataRequest);
 
             Packets.Add((int)ClientPacketType.PlayerUpdatePosition, HandlePlayerUpdate);
+            Packets.Add((int)ClientPacketType.PlayerMeleeAttack, HandlePlayerMeleeAttack);
             Packets.Add((int)ClientPacketType.PlayerDisconnectNotice, HandlePlayerDisconnect);
             Packets.Add((int)ClientPacketType.AccountLogoutNotice, HandleAccountLogout);
         }
@@ -317,6 +319,34 @@ namespace Swaelo_Server
             List<Client> OtherClients = ClientManager.GetOtherClients(ClientID);
             foreach (Client OtherClient in OtherClients)
                 PacketSenderLogic.SendPlayerUpdatePosition(OtherClient.ClientID, CharacterName, CharacterPosition, CharacterRotation);
+        }
+
+        public static void HandlePlayerMeleeAttack(int ClientID, byte[] PacketData)
+        {
+            Log.Out("handle player melee attack");
+            ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
+            PacketReader.WriteBytes(PacketData);
+            int PacketType = PacketReader.ReadInteger();
+            Vector3 AttackPosition = new Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            Vector3 AttackScale = new Vector3(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            Quaternion AttackRotation = new Quaternion(PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat(), PacketReader.ReadFloat());
+            PacketReader.Dispose();
+            //Check if this box collides with any enemies, damage them
+            BoxShape A = new BoxShape(AttackScale.X, AttackScale.Y, AttackScale.Z);
+            RigidTransform ATransform = new RigidTransform(AttackPosition);
+            for(int i = 0; i < EntityManager.ActiveEntities.Count; i++)
+            {
+                BoxShape B = new BoxShape(EntityManager.ActiveEntities[i].Scale.X, EntityManager.ActiveEntities[i].Scale.Y, EntityManager.ActiveEntities[i].Scale.Z);
+                RigidTransform BTransform = new RigidTransform(EntityManager.ActiveEntities[i].Position);
+                bool Colliding = BoxBoxCollider.AreBoxesColliding(A, B, ref ATransform, ref BTransform);
+                if (Colliding)
+                {
+                    Log.Out("Attack Collided!");
+                    PacketSenderLogic.UpdateEntityHealth(EntityManager.ActiveEntities[i].ID, EntityManager.ActiveEntities[i].HealthPoints--);
+                }
+                else
+                    Log.Out("Attack Missed");
+            }
         }
 
         //Handles when a player has disconnected from the server

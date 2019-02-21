@@ -20,7 +20,7 @@ namespace Swaelo_Server
         public string Name { get { return "GameWorld"; } }
         public WorldRenderer Game { get; private set; }
         bool NodeInserted = false;
-        public FSMEntity FoxPrincess;
+        public EnemyEntity FoxPrincess;
         //public GameEntity PrincessTarget;
         //public ServerEntity WaypointTest;
         public FSMEntity EntityTest;
@@ -97,7 +97,7 @@ namespace Swaelo_Server
             //Now all nodes know who their neighbour nodes are fuck yeah
 
             //now create a fox princess to wander around the level
-            FoxPrincess = new FSMEntity(Vector3.Zero, new Vector3(13, 0, 0));
+            FoxPrincess = new EnemyEntity(new Vector3(-3.66f, 0, -1.01f));
         }
 
         public void Update(float dt)

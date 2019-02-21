@@ -15,5 +15,6 @@ namespace Swaelo_Server
         public Quaternion Rotation = Quaternion.Identity;
         public Entity entity;
         public abstract void Update(float dt);
+        public int HealthPoints = 3;
     }
 }

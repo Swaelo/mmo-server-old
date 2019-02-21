@@ -17,9 +17,10 @@ public enum ServerPacketType
 
     SpawnActiveEntityList = 9,  //server gives us a list of all the active entities in the game for us to spawn in
     SendEntityUpdates = 10, //server is giving us the updated info for all the entities active in the game right now
+    UpdateEntityHealth = 11,    //server is telling clients the updated health value of one of the entities
 
-    SpawnOtherPlayer = 11,   //server telling us to spawn another clients character into our world
-    RemoveOtherPlayer = 12  //server telling us to remove a disconnected clients character from the world
+    SpawnOtherPlayer = 12,   //server telling us to spawn another clients character into our world
+    RemoveOtherPlayer = 13  //server telling us to remove a disconnected clients character from the world
 }
 
 namespace Swaelo_Server
@@ -170,6 +171,18 @@ namespace Swaelo_Server
             }
             foreach (Client Client in ClientList)
                 ClientManager.SendPacketTo(Client.ClientID, PacketWriter.ToArray());
+            PacketWriter.Dispose();
+        }
+
+        public static void UpdateEntityHealth(string EntityID, int EntityHealth)
+        {
+            ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
+            PacketWriter.WriteInteger((int)ServerPacketType.UpdateEntityHealth);
+            PacketWriter.WriteString(EntityID);
+            PacketWriter.WriteInteger(EntityHealth);
+            List<Client> ActiveClients = ClientManager.GetAllActiveClients();
+            foreach(Client client in ActiveClients)
+                ClientManager.SendPacketTo(client.ClientID, PacketWriter.ToArray());
             PacketWriter.Dispose();
         }
 

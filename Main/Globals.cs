@@ -22,5 +22,10 @@ namespace Swaelo_Server
            // Globals.space.Add(NewSphere);
             Globals.game.ModelDrawer.Add(NewSphere);
         }
+        public static void AddBox(Vector3 BoxLocation, Vector3 BoxScale, Quaternion BoxRotation)
+        {
+            Box NewBox = new Box(BoxLocation, BoxScale.X, BoxScale.Y, BoxScale.Z);
+            Globals.game.ModelDrawer.Add(NewBox);
+        }
     }
 }

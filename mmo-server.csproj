@@ -94,6 +94,7 @@
     <Compile Include="Camera Types\ChaseCamera.cs" />
     <Compile Include="Camera Types\FreeCamera.cs" />
     <Compile Include="Entities\BaseEntity.cs" />
+    <Compile Include="Entities\EnemyEntity.cs" />
     <Compile Include="Entities\FSMEntity.cs" />
     <Compile Include="Entities\StaticEntity.cs" />
     <Compile Include="Main\WorldRenderer.cs" />
