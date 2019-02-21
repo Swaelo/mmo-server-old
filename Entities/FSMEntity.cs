@@ -23,7 +23,7 @@ namespace Swaelo_Server
             entity.Position = StartPosition;
             Globals.space.Add(entity);
             Globals.game.ModelDrawer.Add(entity);
-
+            EntityManager.AddEntity(this);
             mover = new EntityMover(entity);
             rotator = new EntityRotator(entity);
             Globals.space.Add(mover);
@@ -38,7 +38,7 @@ namespace Swaelo_Server
         public List<NavMeshNode> EntityPath;
         
 
-        public void Update(float dt)
+        public override void Update(float dt)
         {
             Position = entity.Position;
             Rotation = entity.Orientation;

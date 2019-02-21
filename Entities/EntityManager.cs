@@ -12,14 +12,56 @@ namespace Swaelo_Server
         //Store a list of all entities currently active in the game world
         public static List<BaseEntity> ActiveEntities = new List<BaseEntity>();
 
+        //Every .25 seconds the server will update all clients on the state of all entities
+        private static float ClientUpdateInterval = 0.25f;
+        private static float NextClientUpdate = 0.25f;
+
         //Simply add an entity into the list with the rest of them
         public static void AddEntity(BaseEntity NewEntity)
         {
             ActiveEntities.Add(NewEntity);
             NewEntity.ID = EntityIDGenerator.GetNextID();
         }
+
+        //Creates a new static entity with the given details, adds it to the scene and stores it with the rest
+        public static void AddStaticEntity(Vector3 Position, Vector3 Scale)
+        {
+            StaticEntity NewEntity = new StaticEntity(Position, Scale);
+        }
+
+        //Returns from the list of active entities, the entities which clients should be told about
+        public static List<BaseEntity> GetInteractiveEntities()
+        {
+            List<BaseEntity> InteractiveEntities = new List<BaseEntity>();
+
+            foreach(BaseEntity Entity in ActiveEntities)
+            {
+                if (Entity.Type != "Static")
+                    InteractiveEntities.Add(Entity);
+            }
+
+            return InteractiveEntities;
+        }
+
+        //Updates all the entities being managed right now
+        public static void UpdateEntities(float dt)
+        {
+            //Update all the entities
+            foreach(BaseEntity Entity in ActiveEntities)
+            {
+                Entity.Update(dt);
+            }
+            //Count down the client update timer
+            NextClientUpdate -= dt;
+            if(NextClientUpdate <= 0.0f)
+            {
+                NextClientUpdate = ClientUpdateInterval;
+                PacketSenderLogic.SendListEntityUpdates(ClientManager.GetAllActiveClients(), ActiveEntities);
+            }
+        }
     }
 
+    //Generates unique identifiers for every entity
     internal static class EntityIDGenerator
     {
         private static readonly string Encode = "0123456789ABCDEFGHIJKLMNOPQRSTUV";

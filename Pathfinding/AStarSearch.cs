@@ -19,8 +19,6 @@ namespace Swaelo_Server
             ClosedSet = new List<NavMeshNode>();
             OpenSet = new List<NavMeshNode>();
             OpenSet.Add(StartNode);
-            //Reset nodes CameFrom references in preperation for finding our new pathway
-            NavMeshDictionary.ResetPathfinding();
             //Cost of travelling from the start node to the start node is 0
             StartNode.GScore = 0;
             //The FScore for the starting node should be completely heuristic
@@ -54,11 +52,10 @@ namespace Swaelo_Server
                 ClosedSet.Add(CurrentNode);
 
                 //Find all of the current nodes neighbours
-                List<NavMeshNode> CurrentNeighbours = NavMeshDictionary.GetNeighbours(CurrentNode, new Vector2(9, 9), true);
-                for(int i = 0; i < CurrentNeighbours.Count; i++)
+                for(int i = 0; i < CurrentNode.Neighbours.Count; i++)
                 {
                     //Check through all of them
-                    NavMeshNode CurrentNeighbour = CurrentNeighbours[i];
+                    NavMeshNode CurrentNeighbour = CurrentNode.Neighbours[i];
 
                     //Ignore neighbours in the closed set as they have already been evaluated
                     if (ClosedSet.Contains(CurrentNeighbour))

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Swaelo_Server
 {
-    class CharacterData
+    public class CharacterData
     {
         public string Account;
         public Vector3 Position;

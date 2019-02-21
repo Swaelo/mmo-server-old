@@ -1,175 +1,208 @@
 ﻿using System;
-using ADODB;
+using MySql.Data.MySqlClient;
 
 namespace Swaelo_Server
 {
-    class Database
+    public struct DatabaseConnectionSettings
     {
-        public Recordset recorder = null;
-        public Connection connection;
-        public CursorTypeEnum cursorType = ADODB.CursorTypeEnum.adOpenStatic;
-        public LockTypeEnum lockType = ADODB.LockTypeEnum.adLockOptimistic;
+        public MySqlConnection Connection;
+        public string ServerIP;
+        public string ServerPort;
+        public string ConnectionString;
+        public string Username;
+        public string Password;
+    }
 
-        public void Connect()
+    public class Database
+    {
+        public static DatabaseConnectionSettings ConnectionSettings;    //configuration settings for connecting to the sql database
+
+        //Default Constructor
+        public Database(string user, string password, string IP, string Port)
         {
-            recorder = new Recordset();
-            connection = new Connection();
-            connection.ConnectionString = "Driver={MySQL ODBC 3.51 Driver};Server=localhost;Port=3306;Database=gamedatabase;User=root;Password=;Option=3;";
-            connection.CursorLocation = CursorLocationEnum.adUseServer;
-            connection.Open();
+            ConnectionSettings.ServerIP = IP;
+            ConnectionSettings.ServerPort = Port;
+            ConnectionSettings.Username = user;
+            ConnectionSettings.Password = password;
+            ConnectionSettings.Connection = new MySqlConnection(CreateConnectionString());
+            ConnectionSettings.Connection.Open();
+            string Query = "USE gamedatabase";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Close();
         }
 
-        //Checks if a character exists within the database
-        public bool DoesCharacterExist(int ClientID, string CharacterName)
+        //Formats a connection string used to connect to the sql database
+        private static string CreateConnectionString()
         {
-            Console.WriteLine("checking if " + CharacterName + " character already exists");
+            var Settings = ConnectionSettings;
+            string ConnectionString =
+                "Server=" + Settings.ServerIP + ";" +
+                "Port=" + Settings.ServerPort + ";" +
+                "Database" + Settings.ConnectionString + ";" +
+                "User=" + Settings.Password + ";";
+            Log.Out(ConnectionString);
+            return ConnectionString;
+        }
+
+        //Checks if a player character name has already been taken or not
+        public bool IsCharacterNameAvailable(string CharacterName)
+        {
+            Log.Out("Checking if the character name " + CharacterName + " is still available");
             string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            bool CharacterExists = !recorder.EOF;
-            recorder.Close();
-            return CharacterExists;
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Read();
+            bool NameAvailable = !Reader.HasRows;
+            Reader.Close();
+            return NameAvailable;
         }
 
-        //Checks if an account exists within the database
-        public bool DoesAccountExist(int ClientID, string AccountName)
+        //Checks if a player account name has already been taken or not
+        public bool IsAccountNameAvailable(string AccountName)
         {
+            Log.Out("Checking if the account name " + AccountName + " is still available");
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            bool AccountExists = !recorder.EOF;
-            recorder.Close();
-            return AccountExists;
+            //string Query = "USE GameServerDatabase SELECT Username FROM accounts WHERE Username='" + AccountName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Read();
+            bool NameAvailable = !Reader.HasRows;
+            Reader.Close();
+            return NameAvailable;
         }
 
-        //Checks if the password for a given username is a match
-        public bool DoesPasswordMatch(int ClientID, string Username, string Password)
+        //Checks if the given password matches correctly for the given account name
+        public bool IsPasswordCorrect(string AccountName, string Password)
         {
-            string Query = "SELECT * FROM accounts WHERE Username='" + Username + "' AND Password='" + Password + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            bool LoginSuccess = !recorder.EOF;
-            recorder.Close();
-            return LoginSuccess;
+            Log.Out("Checking if " + Password + " is the correct password for the " + AccountName + " account");
+            string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "' AND Password='" + Password + "'";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Read();
+            bool PasswordMatches = Reader.HasRows;
+            Reader.Close();
+            return PasswordMatches;
         }
 
-        //Gets the number of characters this user has created so far
-        public int GetCharacterCount(int ClientID, string AccountName)
+        //Returns the number of characters that exist in a given users account
+        public int GetCharacterCount(string AccountName)
         {
-            string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            int CharacterCount = recorder.Fields["CharactersCreated"].Value;
-            recorder.Close();
-            return CharacterCount;
+            Log.Out("Checking how many characters " + AccountName + " has created so far");
+            string Query = "SELECT CharactersCreated FROM accounts WHERE Username='" + AccountName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            return Convert.ToInt32(Command.ExecuteScalar());
         }
 
+        //Loads all of a player characters information from the database and returns it all, stored in a CharacterData structure object
         public CharacterData GetCharacterData(string CharacterName)
         {
-            CharacterData Data = new CharacterData();
-            //Extract all of this characters data from the database and save it into this structure object
+            Log.Out("Retrieving all of " + CharacterName + " character data from the database");
             string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            Data.Account = recorder.Fields["OwnerAccountName"].Value;
-            Data.Position = new Vector3(recorder.Fields["XPosition"].Value, recorder.Fields["YPosition"].Value, recorder.Fields["ZPosition"].Value);
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Read();
+            CharacterData Data = new CharacterData();
+            Data.Account = Reader["OwnerAccountName"].ToString();
+            Data.Position = new Vector3(Convert.ToInt64(Reader["XPosition"]), Convert.ToInt64(Reader["YPosition"]), Convert.ToInt64(Reader["ZPosition"]));
             Data.Name = CharacterName;
-            Data.Experience = recorder.Fields["ExperiencePoints"].Value;
-            Data.ExperienceToLevel = recorder.Fields["ExperienceTOLevel"].Value;
-            Data.Level = recorder.Fields["Level"].Value;
-            Data.IsMale = recorder.Fields["IsMale"].Value == 1;
-            recorder.Close();
+            Data.Experience = Convert.ToInt32(Reader["ExperiencePoints"]);
+            Data.ExperienceToLevel = Convert.ToInt32(Reader["ExperienceTOLevel"]);
+            Data.Level = Convert.ToInt32(Reader["Level"]);
+            Data.IsMale = Convert.ToBoolean(Reader["IsMale"]);
+            Reader.Close();
             return Data;
         }
 
-        public string GetCharacterName(string AccountName, int CharacterIndex)
+        //Returns the name of a users player character being stored in the given character slot
+        public string GetCharacterName(string AccountName, int CharacterSlot)
         {
+            Log.Out("Retrieving the name of " + AccountName + "'s character in slot #" + CharacterSlot);
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            string CharacterName = "";
-            switch(CharacterIndex)
-            {
-                case (1):
-                    CharacterName = recorder.Fields["FirstCharacterName"].Value;
-                    break;
-                case (2):
-                    CharacterName = recorder.Fields["SecondCharacterName"].Value;
-                    break;
-                case (3):
-                    CharacterName = recorder.Fields["ThirdCharacterName"].Value;
-                    break;
-            }
-            recorder.Close();
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Read();
+            string SlotKey = CharacterSlot == 1 ? "FirstCharacterName" :
+                CharacterSlot == 2 ? "SecondCharacterName" : "ThirdCharacterName";
+            string CharacterName = Reader[SlotKey].ToString();
+            Reader.Close();
             return CharacterName;
         }
 
-        //Registers a new character into the database under a username
-        public void RegisterNewCharacter(string AccountName, string CharacterName, bool IsMale)
+        //Saves a new user account info into the database
+        public void SaveNewAccount(string AccountName, string Password)
         {
-            //Register this character into the database
-            string Query = "SELECT * FROM characters WHERE 0=1";
-            recorder.Open(Query, connection, cursorType, lockType);
-            recorder.AddNew();
-            recorder.Fields["OwnerAccountName"].Value = AccountName;
-            recorder.Fields["XPosition"].Value = 0f;
-            recorder.Fields["YPosition"].Value = 0f;
-            recorder.Fields["ZPosition"].Value = 0f;
-            recorder.Fields["CharacterName"].Value = CharacterName;
-            recorder.Fields["ExperiencePoints"].Value = 0;
-            recorder.Fields["ExperienceToLevel"].Value = 100;
-            recorder.Fields["Level"].Value = 1;
-            recorder.Fields["IsMale"].Value = (IsMale ? 1 : 0);
-            recorder.Update();
-            recorder.Close();
-
-            //Update the users account to note that this character belongs to them, and they have used up on of their character slots
-            Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            int CharacterCount = recorder.Fields["CharactersCreated"].Value;
-            switch(CharacterCount)
-            {
-                case (0):
-                    recorder.Fields["FirstCharacterName"].Value = CharacterName;
-                    break;
-                case (1):
-                    recorder.Fields["SecondCharacterName"].Value = CharacterName;
-                    break;
-                case (2):
-                    recorder.Fields["ThirdCharacterName"].Value = CharacterName;
-                    break;
-            }
-            CharacterCount++;
-            recorder.Fields["CharactersCreated"].Value = CharacterCount;
-            recorder.Update();
-            recorder.Close();
+            Log.Out("Saving the new user account " + AccountName + " into the database");
+            string Query = "INSERT INTO accounts(Username,Password) " +
+                "VALUES('" + AccountName + "','" + Password + "')";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            Command.ExecuteNonQuery();
         }
 
-        //Gets the character position data from a users account in the database
-        public Vector3 GetPlayerLocation(int ClientID, string AccountName)
+        //Saves a brand new player character and all of its information into the database
+        public void SaveNewCharacter(string AccountName, string CharacterName, bool IsMale)
         {
-            //Find the clients row in the account table
-            string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            //Extract the position information from it
-            float XPos = recorder.Fields["XPosition"].Value;
-            float YPos = recorder.Fields["YPosition"].Value;
-            float ZPos = recorder.Fields["ZPosition"].Value;
-            //close the database
-            recorder.Close();
-            //return the position values
-            return new Vector3(XPos, YPos, ZPos);
+            Log.Out("Saving the new character " + CharacterName + " into the database under " + AccountName + "'s account");
+            //First create a new row in the characters table and save all this new characters information there
+            string Query = "INSERT INTO characters(OwnerAccountName,XPosition,YPosition,ZPosition,CharacterName,ExperiencePoints,ExperienceToLevel,Level,IsMale) " +
+                "VALUES('" + AccountName + "','" + 0f + "','" + 0f + "','" + 0f + "','" + CharacterName + "','" + 0 + "','" + 100 + "','" + 1 + "','" + IsMale + "')";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            Command.ExecuteNonQuery();
+            //update this users database account info, so that this new characters name is stored in the correct character slot 
+            int CharacterCount = GetCharacterCount(AccountName) + 1;
+            Query = "USE GameServerDatabase UPDATE accounts SET " +
+                (CharacterCount == 1 ? "FirstCharacterName" : CharacterCount == 2 ? "SecondCharacterName" : "ThirdCharacterName") +
+                "='" + CharacterName + "' WHERE Username='" + AccountName + "'";
+            Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            Command.ExecuteNonQuery();
+            //now update the users account info with the number of characters they have created so far
+            Query = "USE GameServerDatabase UPDATE accounts SET CharactersCreated='" + CharacterCount + "' WHERE Username='" + AccountName + "'";
+            Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            Command.ExecuteNonQuery();
         }
 
-        //Get the character rotation data from a users account in the database
-        public Vector4 GetPlayerRotation(int ClientID, string AccountName)
+        //Gets the location of a player character from the database
+        public Vector3 GetCharacterLocation(string CharacterName)
         {
-            //Find the clients row in the accounts table
-            string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
-            recorder.Open(Query, connection, cursorType, lockType);
-            //extract the rotation values from it
-            float XRot = recorder.Fields["XRotation"].Value;
-            float YRot = recorder.Fields["YRotation"].Value;
-            float ZRot = recorder.Fields["ZRotation"].Value;
-            float WRot = recorder.Fields["WRotation"].Value;
-            //close the database
-            recorder.Close();
-            //return the rotation values
-            return new Vector4(XRot, YRot, ZRot, WRot);
+            Log.Out("Retreiving the character " + CharacterName + "'s world location value");
+            string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Read();
+            Vector3 Position = new Vector3(Convert.ToInt64(Reader["XPosition"]), Convert.ToInt64(Reader["YPosition"]), Convert.ToInt64(Reader["ZPosition"]));
+            Reader.Close();
+            return Position;
+        }
+
+        //Updates the location of a player character in the database
+        public void SaveCharacterLocation(string CharacterName, Vector3 CharacterLocation)
+        {
+            Log.Out("Backing up " + CharacterName + "'s location in the database");
+            string Query = "UPDATE characters SET XPosition='" + CharacterLocation.X + "', YPosition='" + CharacterLocation.Y + "', ZPosition='" + CharacterLocation.Z + "' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            Command.ExecuteNonQuery();
+        }
+
+        //Gets the rotation of a player character from the database
+        public Quaternion GetCharacterRotation(string CharacterName)
+        {
+            Log.Out("Retreiving the character " + CharacterName + "'s rotation values");
+            string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            MySqlDataReader Reader = Command.ExecuteReader();
+            Reader.Read();
+            Quaternion Rotation = new Quaternion(Convert.ToInt64(Reader["XRotation"]), Convert.ToInt64(Reader["YRotation"]), Convert.ToInt64(Reader["ZRotation"]), Convert.ToInt64(Reader["WRotation"]));
+            Reader.Close();
+            return Rotation;
+        }
+
+        //Updates the rotation of a player character in the database
+        public void SaveCharacterRotation(string CharacterName, Quaternion CharacterRotation)
+        {
+            Log.Out("Backing up " + CharacterName + "'s rotation in the database");
+            string Query = "UPDATE characters SET XRotation='" + CharacterRotation.X + "', YRotation='" + CharacterRotation.Y + "', ZRotation='" + CharacterRotation.Z + "', WRotation='" + CharacterRotation.W + "' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
+            Command.ExecuteNonQuery();
         }
     }
 }
