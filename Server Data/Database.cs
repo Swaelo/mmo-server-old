@@ -1,4 +1,12 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        Database.cs
+// Description: Along with the server, the game is also supported by an SQL Database which is used for all long term data storage
+//              Whenever information needs to be save into the database, or retrieving from within, it will be done in this file
+// Author:      Robert        
+// Notes:       What is Roberts Surname?
+// ================================================================================================================================
+
+using System;
 using MySql.Data.MySqlClient;
 
 namespace Swaelo_Server
@@ -41,14 +49,14 @@ namespace Swaelo_Server
                 "Port=" + Settings.ServerPort + ";" +
                 "Database" + Settings.ConnectionString + ";" +
                 "User=" + Settings.Password + ";";
-            Log.Out(ConnectionString);
+            l.o(ConnectionString);
             return ConnectionString;
         }
 
         //Checks if a player character name has already been taken or not
         public bool IsCharacterNameAvailable(string CharacterName)
         {
-            Log.Out("Checking if the character name " + CharacterName + " is still available");
+            l.o("Checking if the character name " + CharacterName + " is still available");
             string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
@@ -61,7 +69,7 @@ namespace Swaelo_Server
         //Checks if a player account name has already been taken or not
         public bool IsAccountNameAvailable(string AccountName)
         {
-            Log.Out("Checking if the account name " + AccountName + " is still available");
+            l.o("Checking if the account name " + AccountName + " is still available");
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
             //string Query = "USE GameServerDatabase SELECT Username FROM accounts WHERE Username='" + AccountName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
@@ -75,7 +83,7 @@ namespace Swaelo_Server
         //Checks if the given password matches correctly for the given account name
         public bool IsPasswordCorrect(string AccountName, string Password)
         {
-            Log.Out("Checking if " + Password + " is the correct password for the " + AccountName + " account");
+            l.o("Checking if " + Password + " is the correct password for the " + AccountName + " account");
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "' AND Password='" + Password + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
@@ -88,7 +96,7 @@ namespace Swaelo_Server
         //Returns the number of characters that exist in a given users account
         public int GetCharacterCount(string AccountName)
         {
-            Log.Out("Checking how many characters " + AccountName + " has created so far");
+            l.o("Checking how many characters " + AccountName + " has created so far");
             string Query = "SELECT CharactersCreated FROM accounts WHERE Username='" + AccountName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             return Convert.ToInt32(Command.ExecuteScalar());
@@ -97,7 +105,7 @@ namespace Swaelo_Server
         //Loads all of a player characters information from the database and returns it all, stored in a CharacterData structure object
         public CharacterData GetCharacterData(string CharacterName)
         {
-            Log.Out("Retrieving all of " + CharacterName + " character data from the database");
+            l.o("Retrieving all of " + CharacterName + " character data from the database");
             string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
@@ -117,7 +125,7 @@ namespace Swaelo_Server
         //Returns the name of a users player character being stored in the given character slot
         public string GetCharacterName(string AccountName, int CharacterSlot)
         {
-            Log.Out("Retrieving the name of " + AccountName + "'s character in slot #" + CharacterSlot);
+            l.o("Retrieving the name of " + AccountName + "'s character in slot #" + CharacterSlot);
             string Query = "SELECT * FROM accounts WHERE Username='" + AccountName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
@@ -132,7 +140,7 @@ namespace Swaelo_Server
         //Saves a new user account info into the database
         public void SaveNewAccount(string AccountName, string Password)
         {
-            Log.Out("Saving the new user account " + AccountName + " into the database");
+            l.o("Saving the new user account " + AccountName + " into the database");
             string Query = "INSERT INTO accounts(Username,Password) " +
                 "VALUES('" + AccountName + "','" + Password + "')";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
@@ -142,7 +150,7 @@ namespace Swaelo_Server
         //Saves a brand new player character and all of its information into the database
         public void SaveNewCharacter(string AccountName, string CharacterName, bool IsMale)
         {
-            Log.Out("Saving the new character " + CharacterName + " into the database under " + AccountName + "'s account");
+            l.o("Saving the new character " + CharacterName + " into the database under " + AccountName + "'s account");
             //First create a new row in the characters table and save all this new characters information there
             string Query = "INSERT INTO characters(OwnerAccountName,XPosition,YPosition,ZPosition,CharacterName,ExperiencePoints,ExperienceToLevel,Level,IsMale) " +
                 "VALUES('" + AccountName + "','" + 0f + "','" + 0f + "','" + 0f + "','" + CharacterName + "','" + 0 + "','" + 100 + "','" + 1 + "','" + IsMale + "')";
@@ -164,7 +172,7 @@ namespace Swaelo_Server
         //Gets the location of a player character from the database
         public Vector3 GetCharacterLocation(string CharacterName)
         {
-            Log.Out("Retreiving the character " + CharacterName + "'s world location value");
+            l.o("Retreiving the character " + CharacterName + "'s world location value");
             string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
@@ -177,7 +185,7 @@ namespace Swaelo_Server
         //Updates the location of a player character in the database
         public void SaveCharacterLocation(string CharacterName, Vector3 CharacterLocation)
         {
-            Log.Out("Backing up " + CharacterName + "'s location in the database");
+            l.o("Backing up " + CharacterName + "'s location in the database");
             string Query = "UPDATE characters SET XPosition='" + CharacterLocation.X + "', YPosition='" + CharacterLocation.Y + "', ZPosition='" + CharacterLocation.Z + "' WHERE CharacterName='" + CharacterName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             Command.ExecuteNonQuery();
@@ -186,7 +194,7 @@ namespace Swaelo_Server
         //Gets the rotation of a player character from the database
         public Quaternion GetCharacterRotation(string CharacterName)
         {
-            Log.Out("Retreiving the character " + CharacterName + "'s rotation values");
+            l.o("Retreiving the character " + CharacterName + "'s rotation values");
             string Query = "SELECT * FROM characters WHERE CharacterName='" + CharacterName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
@@ -199,7 +207,7 @@ namespace Swaelo_Server
         //Updates the rotation of a player character in the database
         public void SaveCharacterRotation(string CharacterName, Quaternion CharacterRotation)
         {
-            Log.Out("Backing up " + CharacterName + "'s rotation in the database");
+            l.o("Backing up " + CharacterName + "'s rotation in the database");
             string Query = "UPDATE characters SET XRotation='" + CharacterRotation.X + "', YRotation='" + CharacterRotation.Y + "', ZRotation='" + CharacterRotation.Z + "', WRotation='" + CharacterRotation.W + "' WHERE CharacterName='" + CharacterName + "'";
             MySqlCommand Command = new MySqlCommand(Query, ConnectionSettings.Connection);
             Command.ExecuteNonQuery();

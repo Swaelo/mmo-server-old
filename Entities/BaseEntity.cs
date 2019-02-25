@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        BaseEntity.cs
+// Description: All types of entities must implement this base class so they can be handled by the entity manager, among other things
+// Author:      Harley Laurie          
+// Notes:       
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

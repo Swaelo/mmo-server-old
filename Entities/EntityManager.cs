@@ -1,4 +1,12 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        EntityManager.cs
+// Description: Handles and keeps track of all entities which are currently active in the game world, calling Update on the manager
+//              will have Update called on every single entity that is currently being tracked by the manager
+// Author:      Harley Laurie          
+// Notes:       
+// ================================================================================================================================
+
+using System;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;

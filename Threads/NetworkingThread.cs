@@ -1,4 +1,13 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        NetworkingThread.cs
+// Description: This thread handles the TCP connections for every client who is currently playing the game, aswell as handling all
+//              of the packet sending and recieving between the server and each of these clients
+// Author:      Harley Laurie          
+// Notes:       I feel its perfectely fine to have the networking thread run on the CPU, still very curious to find out how many
+//              active clients it will take until the server starts lagging or even crashes
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

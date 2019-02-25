@@ -1,4 +1,12 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        FSMEntity.cs
+// Description: This class is far from being complete, but eventually it would be used to define entities whose behaviour is
+//              entirely defined with a Finite State Machine pattern
+// Author:      Harley Laurie          
+// Notes:       An idea is having behaviours and decisions defined in their own files, and used multiple linked up makes the FSM
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

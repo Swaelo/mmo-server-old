@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        AStarSearch.cs
+// Description: Given 2 NavMeshNode objects for start and end, returns a list of nodes that can be travelled between those nodes
+// Author:      Harley Laurie          
+// Notes:       Perhaps pathfinding values wont need to be calculated to find the path, as they will be loaded from file instead
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

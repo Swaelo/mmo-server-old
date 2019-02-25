@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        ClientManager.cs
+// Description: Keeps track of all clients connected to the server, various functions for sending packets to certain clients
+// Author:      Harley Laurie          
+// Notes:       
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;

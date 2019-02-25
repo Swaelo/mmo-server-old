@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        Client.cs
+// Description: Tracks all the information for a single client who is currently connected to the server, their IP, Character etc.
+// Author:      Harley Laurie          
+// Notes:       
+// ================================================================================================================================
+
+using System;
 using System.Net.Sockets;
 
 
@@ -28,7 +35,7 @@ namespace Swaelo_Server
             ClientStream = ClientSocket.GetStream();
             ClientBuffer = new byte[4096];
             ClientStream.BeginRead(ClientBuffer, 0, ClientSocket.ReceiveBufferSize, ReadPacket, null);
-            Log.Out("Incoming connection from " + ClientSocket.Client.RemoteEndPoint.ToString());
+            l.o("Incoming connection from " + ClientSocket.Client.RemoteEndPoint.ToString());
         }
 
         private void ReadPacket(IAsyncResult result)
@@ -41,7 +48,7 @@ namespace Swaelo_Server
             }
             catch(System.IO.IOException e)
             {
-                Log.Out("That client isnt connected anymore");
+                l.o("That client isnt connected anymore");
             }
 
             //0 bytes being received means the connection was closed by the client so we can shut down this connection now

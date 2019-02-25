@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        PacketSenderLogic.cs
+// Description: Any time information needs to be sent to one of the clients, one of these functions will be used to do it
+// Author:      Harley Laurie          
+// Notes:       This will be split up into multiple seperate classes later on, this file is way too big right now
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -30,7 +37,7 @@ namespace Swaelo_Server
         //displays a message in the clients console log window
         public static void SendConsoleMessage(int ClientID, string Message)
         {
-            Log.Out("send console message");
+            l.o("send console message");
             //Create the packet to send through the network
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.ConsoleMessage);
@@ -43,7 +50,7 @@ namespace Swaelo_Server
         //displays a message in the clients player chat window
         public static void SendPlayerMessage(int ClientID, string Sender, string Message)
         {
-            Log.Out("send player message");
+            l.o("send player message");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.PlayerMessage);
             PacketWriter.WriteString(Sender);
@@ -55,7 +62,7 @@ namespace Swaelo_Server
         //Spreads a players message to everyone in a list of clients
         public static void SendPlayersMessage(List<Client> TargetClients, string Sender, string Message)
         {
-            Log.Out("send players message");
+            l.o("send players message");
             foreach (Client OtherClient in TargetClients)
                 SendPlayerMessage(OtherClient.ClientID, Sender, Message);
         }
@@ -63,7 +70,7 @@ namespace Swaelo_Server
         //tells a client if their account was registered
         public static void SendRegisterReply(int ClientID, bool Success, string Message)
         {
-            Log.Out("send register reply");
+            l.o("send register reply");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.RegisterReply);
             PacketWriter.WriteInteger(Success ? 1 : 0);
@@ -75,7 +82,7 @@ namespace Swaelo_Server
         //tells a client if they logged into the account
         public static void SendLoginReply(int ClientID, bool Success, string Message)
         {
-            Log.Out("send login reply");
+            l.o("send login reply");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.LoginReply);
             PacketWriter.WriteInteger(Success ? 1 : 0);
@@ -87,7 +94,7 @@ namespace Swaelo_Server
         //tells a client if their character was created
         public static void SendCreateCharacterReply(int ClientID, bool CreationSuccess, string ReplyMessage)
         {
-            Log.Out("send create character reply");
+            l.o("send create character reply");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.CreateCharacterReply);
             PacketWriter.WriteInteger(CreationSuccess ? 1 : 0);
@@ -99,7 +106,7 @@ namespace Swaelo_Server
         //tells a client the info for each character they have created
         public static void SendCharacterData(int ClientID, string AccountName)
         {
-            Log.Out("send character data");
+            l.o("send character data");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.SendCharacterData);
             //First we need to look up in the database how many characters this user has created so far
@@ -131,7 +138,7 @@ namespace Swaelo_Server
         //tells a client where all the active entities are when they are first entering the server
         public static void SendActiveEntities(int ClientID)
         {
-            Log.Out("send active entities");
+            l.o("send active entities");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.SpawnActiveEntityList);
             int EntityCount = EntityManager.ActiveEntities.Count;
@@ -151,7 +158,7 @@ namespace Swaelo_Server
         //tells each in the list of clients about every entity in that list
         public static void SendListEntityUpdates(List<Client> ClientList, List<BaseEntity> EntityList)
         {
-            //Log.Out("send entity updates");
+            //l.o("send entity updates");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.SendEntityUpdates);
             PacketWriter.WriteInteger(EntityList.Count);
@@ -189,7 +196,7 @@ namespace Swaelo_Server
         //tells a client to enter into the game world
         public static void SendPlayerEnterWorld(int ClientID)
         {
-            Log.Out("sending player ingame");
+            l.o("sending player ingame");
             Client Client = ClientManager.Clients[ClientID];
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.PlayerEnterWorld); //write the packet type
@@ -233,7 +240,7 @@ namespace Swaelo_Server
         //tells a client to spawn someone elses character into their game world
         public static void SendSpawnOther(int ClientID, string CharacterName, Vector3 Position)
         {
-            Log.Out("send spawn other player");
+            l.o("send spawn other player");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.SpawnOtherPlayer);  //packet type
             PacketWriter.WriteString(CharacterName);
@@ -247,7 +254,7 @@ namespace Swaelo_Server
         //tells everyone in a list of clients to spawn a specific player character into their game worlds
         public static void SendListSpawnOther(List<Client> ClientList, string CharacterName, Vector3 Position)
         {
-            Log.Out("send list spawn other");
+            l.o("send list spawn other");
             foreach (Client Client in ClientList)
                 SendSpawnOther(Client.ClientID, CharacterName, Position);
         }
@@ -255,7 +262,7 @@ namespace Swaelo_Server
         //tells a client to update someone elses position info
         public static void SendPlayerUpdatePosition(int ClientID, string CharacterName, Vector3 NewPosition, Quaternion NewRotation)
         {
-            Log.Out("send player update position");
+            l.o("send player update position");
             //Create the packet to send through the network
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.PlayerUpdatePosition); //write the packet type
@@ -278,7 +285,7 @@ namespace Swaelo_Server
         //tells a client to remove someone elses character from their world
         public static void SendRemoveOtherPlayer(int ClientID, string CharacterName)
         {
-            Log.Out("send remove other player");
+            l.o("send remove other player");
             ByteBuffer.ByteBuffer PacketWriter = new ByteBuffer.ByteBuffer();
             PacketWriter.WriteInteger((int)ServerPacketType.RemoveOtherPlayer);  //packet type
             PacketWriter.WriteString(CharacterName);
@@ -289,7 +296,7 @@ namespace Swaelo_Server
         //tells a list of clients to remove someones character from their world
         public static void SendListRemoveOtherPlayer(List<Client> ClientList, string CharacterName)
         {
-            Log.Out("send list remove other player");
+            l.o("send list remove other player");
             foreach (Client C in ClientList)
                 SendRemoveOtherPlayer(C.ClientID, CharacterName);
         }

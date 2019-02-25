@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        StaticEntity.cs
+// Description: Used to add an entity to the world which stands still and does nothing
+// Author:      Harley Laurie          
+// Notes:       Later this would be expanded into an NPC QuestGiver Entity, NPC ShopKeeper Entity etc.
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

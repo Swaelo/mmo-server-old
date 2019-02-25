@@ -1,4 +1,12 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        ServerLogic.cs
+// Description: Used to start up the server for server client communications, custom events related to client connections go here
+// Author:      Harley Laurie          
+// Notes:       Packet Reader and Packet Sender classes should have no problem being split up into multiple files, then handle the
+//              packet IO here, sending the packets on to be handled by seperate classes rather than having 1 master file for each
+// ================================================================================================================================
+
+using System;
 using System.Net;
 using System.Net.Sockets;
 
@@ -12,7 +20,7 @@ namespace Swaelo_Server
 
         public static void InitializeServer()
         {
-            Log.Out("Starting server...");
+            l.o("Starting server...");
             PacketReaderLogic.InitializePackets();   //register packet handler functions
             ServerSocket.Start();   //start the server tcp
             ServerSocket.BeginAcceptTcpClient(new AsyncCallback(OnClientConnect), null);    //start listening for new client connections

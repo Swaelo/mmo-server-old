@@ -1,4 +1,12 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        PhysicsThread.cs
+// Description: Certain components of the server are executed on seperate processing threads
+//              This thread handles the BEPU Physics Simulation and the MonoGame Rendering Window
+// Author:      Harley Laurie          
+// Notes:       Are these threads on the CPU? How can they be done on the GPU? GPU processing would be much faster wouldnt it?
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

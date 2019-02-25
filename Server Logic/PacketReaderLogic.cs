@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        PacketReaderLogic.cs
+// Description: Any time information is received from one of our clients, one of these functions will be used to handle that info
+// Author:      Harley Laurie          
+// Notes:       This will be split up into multiple seperate classes later on, this file is way too big right now
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
@@ -69,7 +76,7 @@ namespace Swaelo_Server
         //Checks if the given username doesnt break any rules
         private static bool IsValidUsername(string username)
         {
-            Log.Out("checking if " + username + " is a valid username");
+            l.o("checking if " + username + " is a valid username");
             //Loop through and check each character in the username, making sure none of them are banned characters
             for (int CharacterIterator = 0; CharacterIterator < username.Length; CharacterIterator++)
             {
@@ -98,7 +105,7 @@ namespace Swaelo_Server
         //Gets a message sent to us from one of the clients
         public static void HandleConsoleMessage(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Console Message");
+            l.o("Handle Console Message");
 
             //Extract the message from the packet
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -113,7 +120,7 @@ namespace Swaelo_Server
         //Clients send chat messages to us and we send them to everyone else
         public static void HandlePlayerMessage(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Player Message");
+            l.o("Handle Player Message");
 
             //Read the message info from the network packet
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -130,7 +137,7 @@ namespace Swaelo_Server
         //Gets a request from a client to register a new account <int:PacketType, string:Username, string:Password>
         public static void HandleRegisterRequest(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Register Request");
+            l.o("Handle Register Request");
 
             //Extract the account credentials from the packet data
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -160,7 +167,7 @@ namespace Swaelo_Server
             }
             else
             {//Otherwise, we need to register the account into the database and tell the user its okay
-                Log.Out(Name + " account is free to be created");
+                l.o(Name + " account is free to be created");
                 //Get the table of accounts from the database and write in the info for the new account
                 Globals.database.SaveNewAccount(Name, Pass);
                 ////Tell the client the new account has successfully been registered
@@ -171,7 +178,7 @@ namespace Swaelo_Server
         //Gets a request from a client to log into an account <int:PacketType, string:Username, string:Password>
         public static void HandleLoginRequest(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Login Request");
+            l.o("Handle Login Request");
 
             //Extract the account credentials from the packet data
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -202,7 +209,7 @@ namespace Swaelo_Server
                 PacketSenderLogic.SendLoginReply(ClientID, false, "The password was incorrect");
                 return;
             }
-            Log.Out(Name + " has logged in");
+            l.o(Name + " has logged in");
             ClientManager.Clients[ClientID].AccountName = Name;
             PacketSenderLogic.SendLoginReply(ClientID, true, "Login success");
         }
@@ -210,12 +217,12 @@ namespace Swaelo_Server
         //Tries to log into user account, tells the client if it worked or not
         public static void HandleAccountLogout(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Account Logout");
+            l.o("Handle Account Logout");
 
             //Get this clients account information
             Client Client = ClientManager.Clients[ClientID];
             //Announce their logging out
-            Log.Out(Client.AccountName + " has logged out");
+            l.o(Client.AccountName + " has logged out");
             Client.AccountName = "";
             Client.CurrentCharacterName = "";
         }
@@ -223,17 +230,17 @@ namespace Swaelo_Server
         //Trys to create a new character for the user and tells them how it went
         public static void HandleCreateCharacterRequest(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Create Character Request");
+            l.o("Handle Create Character Request");
 
             //Open the packet and extract all the relevant information, then close it
-            Log.Out("checking if we can create a new character for this player");
+            l.o("checking if we can create a new character for this player");
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
             int PacketType = PacketReader.ReadInteger();
             string AccountName = PacketReader.ReadString();
             string CharacterName = PacketReader.ReadString();
             bool IsMale = PacketReader.ReadInteger() == 1;
-            Log.Out(AccountName + " wants to register " + CharacterName + " as a new character");
+            l.o(AccountName + " wants to register " + CharacterName + " as a new character");
             PacketReader.Dispose();
             //Query the database to check if this character name has already been taken by someone else
             bool CharacterExists = !Globals.database.IsCharacterNameAvailable(CharacterName);
@@ -251,7 +258,7 @@ namespace Swaelo_Server
         //client wants to enter into the game world with their selected character
         public static void HandleEnterWorldRequest(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Enter World Request");
+            l.o("Handle Enter World Request");
 
             //Extract information from the packet and save it into this clients class in the client manager list
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -265,7 +272,7 @@ namespace Swaelo_Server
             PacketReader.Dispose();
 
             //Send this player into the world with their character now
-            Log.Out(Client.AccountName + ":" + Client.CurrentCharacterName + " has entered the world");
+            l.o(Client.AccountName + ":" + Client.CurrentCharacterName + " has entered the world");
             PacketSenderLogic.SendPlayerEnterWorld(ClientID);
 
             //Spawn a representation of this player in the server physics scene
@@ -281,7 +288,7 @@ namespace Swaelo_Server
         //Sends to the client all the infor for any characters they have created so far
         public static void HandleGetCharacterDataRequest(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Get Character Data Request");
+            l.o("Handle Get Character Data Request");
 
             //Extract the account credentials from the packet data
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -295,7 +302,7 @@ namespace Swaelo_Server
         //Gets updated character information data from one of the connect clients, this needs to be sent out to everyone else so they know where that character is at
         public static void HandlePlayerUpdate(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Player Update");
+            l.o("Handle Player Update");
 
             //Extract the new position data from the network packet
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -323,7 +330,7 @@ namespace Swaelo_Server
 
         public static void HandlePlayerMeleeAttack(int ClientID, byte[] PacketData)
         {
-            Log.Out("handle player melee attack");
+            l.o("handle player melee attack");
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
             PacketReader.WriteBytes(PacketData);
             int PacketType = PacketReader.ReadInteger();
@@ -341,18 +348,18 @@ namespace Swaelo_Server
                 bool Colliding = BoxBoxCollider.AreBoxesColliding(A, B, ref ATransform, ref BTransform);
                 if (Colliding)
                 {
-                    Log.Out("Attack Collided!");
+                    l.o("Attack Collided!");
                     PacketSenderLogic.UpdateEntityHealth(EntityManager.ActiveEntities[i].ID, EntityManager.ActiveEntities[i].HealthPoints--);
                 }
                 else
-                    Log.Out("Attack Missed");
+                    l.o("Attack Missed");
             }
         }
 
         //Handles when a player has disconnected from the server
         public static void HandlePlayerDisconnect(int ClientID, byte[] PacketData)
         {
-            Log.Out("Handle Player Disconnect");
+            l.o("Handle Player Disconnect");
 
             //read the packet
             ByteBuffer.ByteBuffer PacketReader = new ByteBuffer.ByteBuffer();
@@ -375,7 +382,7 @@ namespace Swaelo_Server
             ClientManager.Clients.Remove(ClientID);
             List<Client> ActiveClients = ClientManager.GetAllActiveClients();
             PacketSenderLogic.SendListRemoveOtherPlayer(ActiveClients, Character);
-            Log.Out(Account + ":" + Character + " has disconnected");
+            l.o(Account + ":" + Character + " has disconnected");
         }
     }
 }

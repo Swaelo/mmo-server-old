@@ -1,4 +1,11 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        EnemyEntity.cs
+// Description: Figuring out how combat is going to work, then this will be destroyed and set up inside an FSM entity or something
+// Author:      Harley Laurie          
+// Notes:       
+// ================================================================================================================================
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
