@@ -1,19 +1,12 @@
-﻿// ================================================================================================================================
-// File:        EntityManager.cs
-// Description: Handles and keeps track of all entities which are currently active in the game world, calling Update on the manager
-//              will have Update called on every single entity that is currently being tracked by the manager
-// Author:      Harley Laurie          
-// Notes:       
-// ================================================================================================================================
-
-using System;
-using System.Threading;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using BEPUutilities;
 
-namespace Swaelo_Server
+namespace Server.Entities
 {
     public static class EntityManager
     {
@@ -31,18 +24,12 @@ namespace Swaelo_Server
             NewEntity.ID = EntityIDGenerator.GetNextID();
         }
 
-        //Creates a new static entity with the given details, adds it to the scene and stores it with the rest
-        public static void AddStaticEntity(Vector3 Position, Vector3 Scale)
-        {
-            StaticEntity NewEntity = new StaticEntity(Position, Scale);
-        }
-
         //Returns from the list of active entities, the entities which clients should be told about
         public static List<BaseEntity> GetInteractiveEntities()
         {
             List<BaseEntity> InteractiveEntities = new List<BaseEntity>();
 
-            foreach(BaseEntity Entity in ActiveEntities)
+            foreach (BaseEntity Entity in ActiveEntities)
             {
                 if (Entity.Type != "Static")
                     InteractiveEntities.Add(Entity);
@@ -55,16 +42,30 @@ namespace Swaelo_Server
         public static void UpdateEntities(float dt)
         {
             //Update all the entities
-            foreach(BaseEntity Entity in ActiveEntities)
+            foreach (BaseEntity Entity in ActiveEntities)
             {
                 Entity.Update(dt);
             }
+
             //Count down the client update timer
             NextClientUpdate -= dt;
-            if(NextClientUpdate <= 0.0f)
+            if (NextClientUpdate <= 0.0f)
             {
                 NextClientUpdate = ClientUpdateInterval;
-                PacketSenderLogic.SendListEntityUpdates(ClientManager.GetAllActiveClients(), ActiveEntities);
+                Networking.PacketManager.SendListEntityUpdates(Networking.ConnectionManager.GetActiveClients(), ActiveEntities);
+            }
+        }
+
+        //Tells any enemies targetting this client to drop their target
+        public static void DropTarget(Networking.ClientConnection TargetEntity)
+        {
+            foreach (var Entity in ActiveEntities)
+            {
+                //Check all of the active entities in the game
+                EnemyEntity Enemy = (EnemyEntity)Entity;
+                //Find any targetting them
+                if (Enemy.PlayerTarget == TargetEntity)
+                    Enemy.DropTarget();
             }
         }
     }

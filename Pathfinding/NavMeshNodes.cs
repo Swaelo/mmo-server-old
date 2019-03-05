@@ -1,23 +1,24 @@
-﻿// ================================================================================================================================
-// File:        NavMeshNodes.cs
-// Description: Tracks all of the mesh node objects that define the entire current navigation mesh
-// Author:      Harley Laurie          
-// Notes:       
-// ================================================================================================================================
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BEPUutilities;
 
-namespace Swaelo_Server
+namespace Server.Pathfinding
 {
     public class NavMeshNodes
     {
         //Stores a list of every nav mesh node object that has been added thus far
         public static List<NavMeshNode> MeshNodes = new List<NavMeshNode>();
         public static Dictionary<Vector3, NavMeshNode> LocationMeshNodes = new Dictionary<Vector3, NavMeshNode>();
+
+        //Adds a mesh node to be stored with all the rest
+        public static void AddNode(NavMeshNode NewNode)
+        {
+            MeshNodes.Add(NewNode);
+            LocationMeshNodes.Add(NewNode.NodeLocation, NewNode);
+        }
 
         //Gets a mesh node from the dictionary with its world location
         public static NavMeshNode GetNode(Vector3 NodePosition)
@@ -34,6 +35,17 @@ namespace Swaelo_Server
 
             //Otherwise, we just return the already existing node
             return LocationMeshNodes[NodePosition];
+        }
+
+        //Given an array of 3 vertex locations, returns an array of the 3 mesh nodes assigned to those locations
+        //If any of the locations have not yet a node assigned to them, it will be automatically created and added
+        public static NavMeshNode[] GetNodes(Vector3[] NodeLocations)
+        {
+            NavMeshNode[] Nodes = new NavMeshNode[3];
+            Nodes[0] = GetNode(NodeLocations[0]);
+            Nodes[1] = GetNode(NodeLocations[1]);
+            Nodes[2] = GetNode(NodeLocations[2]);
+            return Nodes;
         }
 
         //Lets 2 mesh nodes know that they are neighbours to one another
@@ -57,6 +69,12 @@ namespace Swaelo_Server
             Node3.AddNeighbour(Node2);
         }
 
+        //Creates neighbour links between all 3 nodes in the given array
+        public static void AssignNeighbours(NavMeshNode[] Nodes)
+        {
+            AssignNeighbours(Nodes[0], Nodes[1], Nodes[2]);
+        }
+
         //Returns a list of all the nodes except for 1 that will not be in the list
         public static List<NavMeshNode> GetOtherNodes(NavMeshNode TargetNode)
         {
@@ -72,7 +90,7 @@ namespace Swaelo_Server
         //Checks that none of the existing mesh nodes are in this location
         public static bool IsLocationAvailable(Vector3 Location)
         {
-            foreach(NavMeshNode Node in MeshNodes)
+            foreach (NavMeshNode Node in MeshNodes)
             {
                 if (Node.NodeLocation == Location)
                     return false;

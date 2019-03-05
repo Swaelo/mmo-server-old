@@ -1,17 +1,11 @@
-﻿// ================================================================================================================================
-// File:        AStarSearch.cs
-// Description: Given 2 NavMeshNode objects for start and end, returns a list of nodes that can be travelled between those nodes
-// Author:      Harley Laurie          
-// Notes:       Perhaps pathfinding values wont need to be calculated to find the path, as they will be loaded from file instead
-// ================================================================================================================================
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BEPUutilities;
 
-namespace Swaelo_Server
+namespace Server.Pathfinding
 {
     public static class AStarSearch
     {
@@ -32,19 +26,19 @@ namespace Swaelo_Server
             StartNode.FScore = Vector3.Distance(StartNode.NodeLocation, EndNode.NodeLocation);
 
             //Iterate over the OpenSet until there are no more nodes left to evaluate
-            while(OpenSet.Count > 0)
+            while (OpenSet.Count > 0)
             {
                 //The current node each time will be the node in OpenSet with the lowest FScore
                 NavMeshNode CurrentNode = GetCurrentNode(OpenSet);
 
                 //If this is the end node then the path is ready
-                if(CurrentNode == EndNode)
+                if (CurrentNode == EndNode)
                 {
                     //When the path is found, we start at the end node, and keep following back each nodes CameFrom reference, until we end up at the start node
                     List<NavMeshNode> FinishedPath = new List<NavMeshNode>();
                     FinishedPath.Add(EndNode);
                     NavMeshNode PathNode = EndNode;
-                    while(PathNode != StartNode)
+                    while (PathNode != StartNode)
                     {
                         PathNode = PathNode.CameFrom;
                         FinishedPath.Add(PathNode);
@@ -59,7 +53,7 @@ namespace Swaelo_Server
                 ClosedSet.Add(CurrentNode);
 
                 //Find all of the current nodes neighbours
-                for(int i = 0; i < CurrentNode.Neighbours.Count; i++)
+                for (int i = 0; i < CurrentNode.Neighbours.Count; i++)
                 {
                     //Check through all of them
                     NavMeshNode CurrentNeighbour = CurrentNode.Neighbours[i];
@@ -92,12 +86,12 @@ namespace Swaelo_Server
         {
             NavMeshNode CurrentNode = OpenSet[0];
             float CurrentFScore = CurrentNode.FScore;
-            for(int i = 1; i < OpenSet.Count; i++)
+            for (int i = 1; i < OpenSet.Count; i++)
             {
                 NavMeshNode CompareNode = OpenSet[i];
                 float CompareFScore = CompareNode.FScore;
                 //We are trying to find which node has the lowest FScore value
-                if(CompareFScore < CurrentFScore)
+                if (CompareFScore < CurrentFScore)
                 {
                     CurrentNode = CompareNode;
                     CurrentFScore = CompareFScore;
