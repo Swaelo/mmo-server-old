@@ -1,4 +1,7 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        Program.cs
+// Description: The programs main entry point
+// ================================================================================================================================
 
 namespace Server
 {
@@ -11,8 +14,8 @@ namespace Server
             //Start listening for new client connections
             Networking.ConnectionManager.InitializeManager();
             //Open the monogame window (which will start up the physics simulation) to see whats going on
-            Rendering.GameWindow.CurrentWindow = new Rendering.Window(800, 600);
-            Rendering.GameWindow.CurrentWindow.Run();
+            new Rendering.Window(800, 600);
+            Rendering.Window.Instance.Run();
         }
     }
 }
