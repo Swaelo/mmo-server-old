@@ -37,13 +37,13 @@
     <StartupObject>Server.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="Content\Content.mgcb" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\CharacterData.cs" />
     <Compile Include="Data\ModelDataExtractor.cs" />
     <Compile Include="Data\StringChecker.cs" />
+    <Compile Include="Maths\VectorTranslate.cs" />
     <Compile Include="Entities\BaseEntity.cs" />
     <Compile Include="Entities\EnemyEntity.cs" />
     <Compile Include="Entities\EntityManager.cs" />
@@ -53,27 +53,30 @@
     <Compile Include="Networking\ConnectionManager.cs" />
     <Compile Include="Data\Database.cs" />
     <Compile Include="Networking\PacketWriter.cs" />
-    <Compile Include="og.cs" />
+    <Compile Include="Pathfinding\NavMeshVertex.cs" />
+    <Compile Include="Rendering\og.cs" />
     <Compile Include="Networking\PacketManager.cs" />
-    <Compile Include="Pathfinding\AStarSearch.cs" />
-    <Compile Include="Pathfinding\NavMesh.cs" />
     <Compile Include="Pathfinding\NavMeshNode.cs" />
-    <Compile Include="Pathfinding\NavMeshNodes.cs" />
+    <Compile Include="Pathfinding\NavMesh.cs" />
     <Compile Include="Physics\WorldSimulator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Rendering\Camera.cs" />
-    <Compile Include="Rendering\GameWindow.cs" />
+    <Compile Include="Input\BaseCameraControls.cs" />
+    <Compile Include="Input\FPSCameraControls.cs" />
+    <Compile Include="Input\FPSCharacterControls.cs" />
     <Compile Include="Rendering\Window.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="BEPUphysics">
       <HintPath>dlls\BEPUphysics.dll</HintPath>
     </Reference>
-    <Reference Include="BEPUphysicsDrawer">
-      <HintPath>dlls\BEPU\BEPUphysicsDrawer.dll</HintPath>
+    <Reference Include="BEPUphysicsDrawer, Version=1.5.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\downloads\bepuphysics1-1.5.1\BEPUphysicsDrawer\bin\Debug\BEPUphysicsDrawer.dll</HintPath>
     </Reference>
-    <Reference Include="BEPUutilities">
-      <HintPath>dlls\BEPUutilities.dll</HintPath>
+    <Reference Include="BEPUutilities, Version=1.5.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>dlls\BEPU\BEPUutilities.dll</HintPath>
     </Reference>
     <Reference Include="ConversionHelper">
       <HintPath>dlls\BEPU\ConversionHelper.dll</HintPath>
@@ -92,7 +95,14 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>mkdir "$(ProjectDir)\bin\Debug\Content\"
-xcopy /E /Y "$(ProjectDir)Content\bin\Windows" "$(ProjectDir)\bin\Debug\Content"</PostBuildEvent>
+    <PostBuildEvent>:: Create a new directory for the asset contents and copy all the .mgcb converted files into it
+mkdir "$(ProjectDir)\bin\Debug\Content\"
+xcopy /E /Y "$(ProjectDir)Content\bin\Windows" "$(ProjectDir)\bin\Debug\Content"
+
+:: Copy all the dll files into the build directory
+xcopy /E /Y "$(ProjectDir)dlls" "$(ProjectDir)\bin\Debug"
+xcopy /E /Y "$(ProjectDir)dlls\BEPU" "$(ProjectDir)\bin\Debug"
+xcopy /E /Y "$(ProjectDir)dlls\MonoGame" "$(ProjectDir)\bin\Debug"
+</PostBuildEvent>
   </PropertyGroup>
 </Project>
