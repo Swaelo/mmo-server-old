@@ -1,5 +1,0 @@
-Source File,Dest File,Processor Type,Content Type,Source File Size,Dest File Size,Build Seconds
-"C:/Users/Harley/Desktop/Server/Server/Content/DataFont.spritefont","C:/Users/Harley/Desktop/Server/Server/Content/bin/Windows/DataFont.xnb","FontDescriptionProcessor","SpriteFontContent",1631,21521,0.4509952
-"C:/Users/Harley/Desktop/Server/Server/Content/InstancedEffect.fx","C:/Users/Harley/Desktop/Server/Server/Content/bin/Windows/InstancedEffect.xnb","EffectProcessor","CompiledEffectContent",2201,8087,0.4560046
-"C:/Users/Harley/Desktop/Server/Server/Content/NavMesh.fbx","C:/Users/Harley/Desktop/Server/Server/Content/bin/Windows/NavMesh.xnb","ModelProcessor","ModelContent",213612,418227,0.3029992
-"C:/Users/Harley/Desktop/Server/Server/Content/TerrainMesh.fbx","C:/Users/Harley/Desktop/Server/Server/Content/bin/Windows/TerrainMesh.xnb","ModelProcessor","ModelContent",554140,1122679,0.3340016
