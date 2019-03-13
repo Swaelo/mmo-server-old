@@ -1,11 +1,9 @@
 ﻿// ================================================================================================================================
 // File:        l.cs
 // Description: Used to quickly and easily print messages to the window to be displayed during runtime for debug purposes
-// Author:      Harley Laurie          
-// Notes:       Typing l.og("Hello World"); as a line of code will display "Hello World" to the message window
 // ================================================================================================================================
 
-using System;
+using BEPUutilities;
 
 namespace Server
 {
@@ -39,9 +37,9 @@ namespace Server
             og(value.ToString());
         }
 
-        //public static void og(Vector3 Vector)
-        //{
-        //    og("Vector3: " + Vector.X + ", " + Vector.Y + ", " + Vector.Z);
-        //}
+        public static void og(Vector3 vector)
+        {
+            og(vector.X + ", " + vector.Y + ", " + vector.Z);
+        }
     }
 }
