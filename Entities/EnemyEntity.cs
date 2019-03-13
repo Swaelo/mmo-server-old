@@ -1,178 +1,185 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        EnemyEntity.cs
+// Description: Defines a single enemy currently active in the servers world simulation, controls all of their AI/Behaviour during play
+// ================================================================================================================================
+
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BEPUphysics;
 using BEPUutilities;
 using BEPUphysics.Entities;
 using BEPUphysics.Entities.Prefabs;
-using BEPUphysics.Paths.PathFollowing;
+using Server.Networking;
+using Server.Physics;
 
 namespace Server.Entities
 {
     public enum EnemyState
     {
         Idle,
+        Seek,
         Attack,
         Flee
     }
 
     public class EnemyEntity : BaseEntity
     {
-        public EnemyState EntityState = EnemyState.Idle;
-
-        private float AgroRange = 5f;
-        private float AgroMaxDistance = 10f;
-        public Networking.ClientConnection PlayerTarget = null;
+        public Cylinder Body;   //The physical body of the character
         
-        private readonly EntityMover mover; //entity mover defines a linear motor which tries to push the entity to the desired location
-        private readonly EntityRotator rotator;
 
-        public EnemyEntity(string EnemyType, Vector3 SpawnPosition)
+
+        public EnemyState EntityState = EnemyState.Idle;    //Current AI state of the entity
+        private float AgroRange = 5f;   //How close players must be for the enemy to start targetting them
+        private float AgroMaxDistance = 10f;    //How far players can run away before they will stop being targetted
+        public ClientConnection PlayerTarget = null; //The current player the entity is targetting in combat
+        private List<Vector3> NavigationPathway;    //Pathway of navmeshnodes for the entity to follow to reach its target location
+        private Vector3 SpawnLocation;  //The enemy will return to this location after dropping its target
+        private float SeekSpeed = 1;    //How fast the enemy moves while moving towards its current target
+        private float FleeSpeed = 3;    //How fast the enemy moves while returning to its spawn location
+
+        public EnemyEntity(Vector3 SpawnPosition)
         {
-            Position = SpawnPosition;
-            entity = new Entity(new Box(SpawnPosition, 1, 1, 1, 1).CollisionInformation, 0);
-            entity.Position = SpawnPosition;
+            //Store the entities spawn location so they know where to return to once combat has finished
+            SpawnLocation = SpawnPosition;
 
-            Physics.WorldSimulator.Space.Add(entity);
-            Rendering.GameWindow.CurrentWindow.ModelDrawer.Add(entity);
+            //Create a box object to represent the entity in the physics scene, set its location and gravity value
+            Entity = new Entity(new Box(SpawnPosition, 1, 1, 1, 1).CollisionInformation, 1);
+            Entity.Position = SpawnPosition;
+
+            //Add the box object to the physics scene and start rendering it
+            Physics.WorldSimulator.Space.Add(Entity);
+            Rendering.Window.Instance.ModelDrawer.Add(Entity);
+
+            //Tell the entity manager this new entity has been created so it can handle it for us
             EntityManager.AddEntity(this);
 
-            mover = new EntityMover(entity);
-            rotator = new EntityRotator(entity);
-            Physics.WorldSimulator.Space.Add(mover);
-            Physics.WorldSimulator.Space.Add(rotator);
-            this.Type = EnemyType;
+            //Set the type of ingame enemy that this entity represents
+            this.Type = "Skeleton Warrior";
         }
 
-        public override void Update(float dt)
+        public override void Update(float DeltaTime)
         {
-            Position = entity.Position;
-            Rotation = entity.Orientation;
-
-            switch (EntityState)
+            switch(EntityState)
             {
-                //While idle the entity should seek a new player target
                 case (EnemyState.Idle):
-                    //Find which player is the closest to the enemy, if there are any
-                    int PlayerCount = Networking.ConnectionManager.GetActiveClients().Count;
-                    if (PlayerCount >= 1)
-                    {
-                        Networking.ClientConnection ClosestClient = Networking.ConnectionManager.GetClosestActiveClient(Position);
-                        //If the closest client is within attack range, then we change to attack state and make them our target
-                        float ClosestDistance = Vector3.Distance(Position, ClosestClient.CharacterPosition);
-                        if (ClosestDistance <= AgroRange)
-                        {
-                            EntityState = EnemyState.Attack;
-                            PlayerTarget = ClosestClient;
-                            break;
-                        }
-                    }
-
+                    IdleState();
                     break;
+
+                case (EnemyState.Seek):
+                    SeekState(DeltaTime);
+                    break;
+
                 case (EnemyState.Attack):
-                    //Always face toward our current target
-                    Vector3 RelativePosition = PlayerTarget.CharacterPosition - Position;
-                    Quaternion FacingRotation = LookRotation(RelativePosition, Vector3.Up);
-                    rotator.TargetOrientation = FacingRotation;
-
-                    //Check how far away they are
-                    float TargetDistance = Vector3.Distance(entity.Position, PlayerTarget.CharacterPosition);
-
-                    //Attack them if they are within range
-                    if (TargetDistance <= 1)
-                        AttackTarget();
-                    //Move closer if they arent within our attack range yet
-                    else if (TargetDistance > 1)
-                        SeekTarget();
-                    //If the target gets too far away, drop them as our target
-                    else
-                        DropTarget();
-
+                    AttackState(DeltaTime);
                     break;
+
                 case (EnemyState.Flee):
+                    FleeState(DeltaTime);
+                    break;
 
+                default:
                     break;
             }
         }
 
-        public static Quaternion LookRotation(Vector3 Forward, Vector3 Up)
-        {
-            Forward.Normalize();
-            Vector3 VectorA = Vector3.Normalize(Forward);
-            Vector3 VectorB = Vector3.Normalize(Vector3.Cross(Up, VectorA));
-            Vector3 VectorC = Vector3.Cross(VectorA, VectorB);
-            var m00 = VectorB.X;
-            var m01 = VectorB.Y;
-            var m02 = VectorB.Z;
-            var m10 = VectorC.X;
-            var m11 = VectorC.Y;
-            var m12 = VectorC.Z;
-            var m20 = VectorA.X;
-            var m21 = VectorA.Y;
-            var m22 = VectorA.Z;
-
-            float num8 = (m00 + m11) + m22;
-            var quaternion = new Quaternion();
-            if (num8 > 0f)
-            {
-                var num = (float)Math.Sqrt(num8 + 1f);
-                quaternion.W = num * 0.5f;
-                num = 0.5f / num;
-                quaternion.X = (m12 - m21) * num;
-                quaternion.W = (m20 - m02) * num;
-                quaternion.Z = (m01 - m10) * num;
-                return quaternion;
-            }
-            if ((m00 >= m11) && (m00 >= m22))
-            {
-                var num7 = (float)Math.Sqrt(((1f + m00) - m11) - m22);
-                var num4 = 0.5f / num7;
-                quaternion.X = 0.5f * num7;
-                quaternion.Y = (m01 + m10) * num4;
-                quaternion.Z = (m02 + m20) * num4;
-                quaternion.W = (m12 - m21) * num4;
-                return quaternion;
-            }
-            if (m11 > m22)
-            {
-                var num6 = (float)Math.Sqrt(((1f + m11) - m00) - m22);
-                var num3 = 0.5f / num6;
-                quaternion.X = (m10 + m01) * num3;
-                quaternion.Y = 0.5f * num6;
-                quaternion.Z = (m21 + m12) * num3;
-                quaternion.W = (m20 - m02) * num3;
-                return quaternion;
-            }
-            var num5 = (float)Math.Sqrt(((1f + m22) - m00) - m11);
-            var num2 = 0.5f / num5;
-            quaternion.X = (m20 + m02) * num2;
-            quaternion.Y = (m21 + m12) * num2;
-            quaternion.Z = 0.5f * num5;
-            quaternion.W = (m01 - m10) * num2;
-            return quaternion;
-        }
-
+        //If the enemy is in the Seek or Attack states, it is forced to drop its current target, flee back to its spawn position then idle again
         public void DropTarget()
         {
-            l.og("drop");
-            //Drop the target, stop the mover/rotator and go back to our idle state
-            EntityState = EnemyState.Idle;
-            rotator.TargetOrientation = entity.Orientation;
-            mover.TargetPosition = entity.Position;
+            l.og("drop target");
+            EntityState = EnemyState.Flee;
             PlayerTarget = null;
         }
 
-        public void AttackTarget()
+        private void IdleState()
         {
-            l.og("attack");
+            //Look at all the active players in the game world, find which one is the closest to this entity
+            List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
+            if(ActivePlayers.Count > 0)
+            {
+                //Check how far away the closest player is
+                ClientConnection ClosestPlayer = FindClosestPlayer(ActivePlayers);
+                float PlayerDistance = Vector3.Distance(Entity.Position, ClosestPlayer.CharacterPosition);
+                //If they are close enough they become our new target and we enter the combat state
+                if(PlayerDistance <= AgroRange)
+                {
+                    l.og("new target!");
+                    PlayerTarget = ClosestPlayer;
+                    EntityState = EnemyState.Attack;
+                    return;
+                }
+            }
         }
 
-        public void SeekTarget()
+        //Returns whatever player character in the list is closest to this entity
+        private ClientConnection FindClosestPlayer(List<ClientConnection> ActivePlayers)
         {
-            l.og("seek");
-            //mover.TargetPosition = entity.Position - entity.WorldTransform.Forward * 2.5f;
+            //Assign the very first player in the list as the initial closest player
+            ClientConnection ClosestPlayer = ActivePlayers[0];
+            float ClosestPlayerDistance = Vector3.Distance(Entity.Position, ClosestPlayer.CharacterPosition);
+            //Now loop through all of the remaining players and compare each of them to see if any of them are closer
+            for(int i = 1; i < ActivePlayers.Count; i++)
+            {
+                //Compute the distance between this next player and the target location
+                ClientConnection NextPlayer = ActivePlayers[i];
+                float NextPlayerDistance = Vector3.Distance(Entity.Position, NextPlayer.CharacterPosition);
+                //Compare the next players distance to the distance of the current closest player
+                if(NextPlayerDistance < ClosestPlayerDistance)
+                {
+                    //Update the closest player if the next player is found to be closer
+                    ClosestPlayer = NextPlayer;
+                    ClosestPlayerDistance = NextPlayerDistance;
+                }
+            }
+            //After each active player has been checked, return which one was found to be the closest to the target location
+            return ClosestPlayer;
+        }
+
+        //Stops everything, finds a path to the target location, then starts navigation to it
+        public void SeekLocation(Vector3 TargetLocation)
+        {
+            EntityState = EnemyState.Seek;
+            NavigationPathway = WorldSimulator.TestLevelNavMesh.ConstructPathway(Entity.Position, WorldSimulator.FPSController.Position);
+        }
+
+        private void SeekState(float DeltaTime)
+        {
+            //Move the enemy towards the next location in the navigation pathway
+            Entity.Position = Vector3.Lerp(Entity.Position, NavigationPathway[0], SeekSpeed * DeltaTime);
+            //Check how far away we are now from this next location in the pathway
+            float NextLocationDistance = Vector3.Distance(Entity.Position, NavigationPathway[0]);
+            //Remove this location from the pathway once we are close enough to it
+            if (NextLocationDistance < 1f)
+                NavigationPathway.Remove(NavigationPathway[0]);
+            //Once there are no more locations to traverse through along the pathway then the enemy is finished seeking
+            if (NavigationPathway.Count == 0)
+            {
+                l.og("finished seeking");
+                EntityState = EnemyState.Idle;
+                return;
+            }
+        }
+
+        private void AttackState(float DeltaTime)
+        {
+            //Check how far away our target is, the current distance will determine what action we take during combat
+            float TargetDistance = Vector3.Distance(Entity.Position, PlayerTarget.CharacterPosition);
+
+            //Attack them if they are within range
+            if (TargetDistance <= 1)
+                l.og("Attack!");
+            //Move closer if they arent close enough to attack
+            else if (TargetDistance > 1 && TargetDistance < AgroMaxDistance)
+                Entity.Position = Vector3.Lerp(Entity.Position, PlayerTarget.CharacterPosition, SeekSpeed * DeltaTime);
+            //If they are out of range then drop them as our target
+            else if(TargetDistance > AgroMaxDistance)
+                DropTarget();
+        }
+
+        private void FleeState(float DeltaTime)
+        {
+            //Run back to our spawn position then idle once we get there
+            Entity.Position = Vector3.Lerp(Entity.Position, SpawnLocation, FleeSpeed * DeltaTime);
+            float SpawnDistance = Vector3.Distance(Entity.Position, SpawnLocation);
+            if (SpawnDistance <= 1f)
+                EntityState = EnemyState.Idle;
         }
     }
 }
