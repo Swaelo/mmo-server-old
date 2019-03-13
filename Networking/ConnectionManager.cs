@@ -1,4 +1,10 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        ConnectionManager.cs
+// Description: Keeps track of all the game clients which are currently connected to the server, and allows you to managed those
+//              connections, and send packets to the clients as needed
+// ================================================================================================================================
+
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
@@ -81,12 +87,19 @@ namespace Server.Networking
         //Cleans up a connection from one of the clients no longer connected
         public static void CloseConnection(ClientConnection Connection)
         {
-            //Remove them from the dictionary
-            ClientConnections.Remove(Connection.ID);
-            //Close their tcp socket connection
-            Connection.Connection.Close();
+            l.og("player disconnecting");
+            Entities.EntityManager.HandleClientDisconnect(Connection);
+            HandleClientDisconnect(Connection);
+        }
 
-            l.og("client disconnected from " + Connection.ID);
+        //Notifies all active client connections that a player has disconnected from the game world
+        public static void HandleClientDisconnect(ClientConnection Client)
+        {
+            //Remove them from the client list
+            ClientConnections.Remove(Client.ID);
+            //Tell all the other clients this player has left the game world
+            List<ClientConnection> ActiveClients = GetActiveClients();
+            Networking.PacketManager.SendListRemoveOther(ActiveClients, Client.CharacterName);
         }
 
         //Sends network packet to active game client

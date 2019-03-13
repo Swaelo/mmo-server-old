@@ -1,10 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿// ================================================================================================================================
+// File:        EntityManager.cs
+// Description: Keeps track of all entities currently active in the servers world simulation, used to keep them all up to date and
+//              for sending all their updated information to any connected game clients to keep them updated on the entities states
+// ================================================================================================================================
+
+using System;
 using System.Threading;
-using System.Threading.Tasks;
-using BEPUutilities;
+using System.Collections.Generic;
 
 namespace Server.Entities
 {
@@ -67,6 +69,20 @@ namespace Server.Entities
                 if (Enemy.PlayerTarget == TargetEntity)
                     Enemy.DropTarget();
             }
+        }
+
+        //Handles disconnection of a player from the game
+        public static void HandleClientDisconnect(Networking.ClientConnection Client)
+        {
+            //Remove them from the scene
+            Physics.WorldSimulator.Space.Remove(Client.ServerCollider);
+            Rendering.Window.Instance.ModelDrawer.Remove(Client.ServerCollider);
+
+            //Tell any enemies attacking them to drop their target
+            Entities.EntityManager.DropTarget(Client);
+
+            //Backup their character data in the database
+            Data.Database.SaveCharacterLocation(Client.CharacterName, Maths.VectorTranslate.ConvertVector(Client.CharacterPosition));
         }
     }
 

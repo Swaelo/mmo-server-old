@@ -1,4 +1,10 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        ClientConnection.cs
+// Description: Handles a network connection between the server and a single game client, helps transfer packets between the two and
+//              keeps track of what account and character is being used by that game client
+// ================================================================================================================================
+
+using System;
 using System.Net;
 using System.Net.Sockets;
 using BEPUutilities;

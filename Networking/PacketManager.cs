@@ -1,8 +1,9 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        PacketManager.cs
+// Description: Defines all the functions used for sending and recieving data through the network to player clients during runtime
+// ================================================================================================================================
+
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using BEPUutilities;
 
 public enum ClientPacketType
@@ -229,7 +230,7 @@ namespace Server.Networking
             ClientConnection Client = ConnectionManager.ClientConnections[ClientID];
             Client.AccountName = Reader.ReadString();
             Client.CharacterName = Reader.ReadString();
-            Client.CharacterPosition = Reader.ReadVector3();
+            Client.CharacterPosition = Maths.VectorTranslate.ConvertVector(Reader.ReadVector3());
             SendActivePlayerList(ClientID);
         }
         //Tells a client where all the other players are in the world to have them spawned in before they can enter into the world
@@ -262,10 +263,9 @@ namespace Server.Networking
             {
                 Writer.WriteString(Entity.Type);
                 Writer.WriteString(Entity.ID);
-                Writer.WriteVector3(Entity.Position);
+                Writer.WriteVector3(Maths.VectorTranslate.ConvertVector(Entity.Position));
             }
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
-            l.og("telling new client about " + EntityList.Count + " active entities");
         }
         //After recieving the active entity list, the new client will tell us they are ready to enter into the game world
         public static void HandleNewPlayerReady(int ClientID, byte[] PacketData)
@@ -274,7 +274,7 @@ namespace Server.Networking
             NewClient.InGame = true;
             NewClient.ServerCollider = new BEPUphysics.Entities.Prefabs.Sphere(NewClient.CharacterPosition, 1);
             Physics.WorldSimulator.Space.Add(NewClient.ServerCollider);
-            Rendering.GameWindow.CurrentWindow.ModelDrawer.Add(NewClient.ServerCollider);
+            Rendering.Window.Instance.ModelDrawer.Add(NewClient.ServerCollider);
             //All the other players need to be told about the new player
             List<ClientConnection> OtherClients = ConnectionManager.GetActiveClientsExceptFor(ClientID);
             l.og(ClientID + " has entered the game");
@@ -292,7 +292,7 @@ namespace Server.Networking
                 //ID
                 Writer.WriteString(Entity.ID);
                 //Position
-                Writer.WriteVector3(Entity.Position);
+                Writer.WriteVector3(Maths.VectorTranslate.ConvertVector(Entity.Position));
                 //Rotation
                 Writer.WriteQuaternion(Entity.Rotation);
             }
@@ -342,7 +342,7 @@ namespace Server.Networking
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
             string CharacterName = Reader.ReadString();
-            Vector3 CharacterPosition = Reader.ReadVector3();
+            Vector3 CharacterPosition = Maths.VectorTranslate.ConvertVector(Reader.ReadVector3());
             Quaternion CharacterRotation = Reader.ReadQuaternion();
 
             //Update this players position in the server
@@ -369,27 +369,10 @@ namespace Server.Networking
         //Removes a player from the game once they have stopped playing
         public static void HandlePlayerDisconnect(int ClientID, byte[] PacketData)
         {
-            //Find this clients information
+            l.og("player disconnecting");
             ClientConnection Client = ConnectionManager.ClientConnections[ClientID];
-            string Account = Client.AccountName;
-            string Character = Client.CharacterName;
-            Vector3 Position = Client.CharacterPosition;
-
-            //Remove them from the scene
-            Physics.WorldSimulator.Space.Remove(Client.ServerCollider);
-            Rendering.GameWindow.CurrentWindow.ModelDrawer.Remove(Client.ServerCollider);
-
-            //Tell any enemies targetting the client to drop them as their target
-            Entities.EntityManager.DropTarget(Client);
-
-            //Backup their character data into the database
-            Data.Database.SaveCharacterLocation(Character, Position);
-
-            //Remove them from the clients list and tell all other players to remove them from their game worlds
-            ConnectionManager.ClientConnections.Remove(ClientID);
-            List<ClientConnection> OtherClients = ConnectionManager.GetActiveClients();
-            SendListRemoveOther(OtherClients, Character);
-            l.og(Account + " disconnected");
+            Entities.EntityManager.HandleClientDisconnect(Client);
+            Networking.ConnectionManager.HandleClientDisconnect(Client);
         }
         public static void SendListRemoveOther(List<ClientConnection> Clients, string CharacterName)
         {
