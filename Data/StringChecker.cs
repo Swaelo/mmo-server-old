@@ -1,8 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// ================================================================================================================================
+// File:        StringChecker.cs
+// Description: Used to make sure strings do not contain any banned characters before they are used with the SQL database to prevent
+//              users from trying to perform any SQL code injection
+// ================================================================================================================================
+
+using System;
 
 namespace Server.Data
 {

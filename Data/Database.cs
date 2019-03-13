@@ -1,4 +1,9 @@
-﻿using System;
+﻿// ================================================================================================================================
+// File:        Database.cs
+// Description: Allows the server to interact with the local SQL database which is used to store all user account and character info
+// ================================================================================================================================
+
+using System;
 using BEPUutilities;
 using MySql.Data.MySqlClient;
 

@@ -1,4 +1,9 @@
-﻿using System.Collections.Generic;
+﻿// ================================================================================================================================
+// File:        ModelDataExtractor.cs
+// Description: Loads all of a 3d models data from its content file and then can be used to extract all of the models vertices
+// ================================================================================================================================
+
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 

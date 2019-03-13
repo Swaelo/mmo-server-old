@@ -1,12 +1,11 @@
-﻿using System;
-using System.Linq;
-using System.Text;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+﻿// ================================================================================================================================
+// File:        TerrainMesh.cs
+// Description: Used to load in the worlds terrain mesh collider that has been exported from the unity engine to then be used in
+//              the servers world simulation for physics simulations
+// ================================================================================================================================
+
 using BEPUphysics.BroadPhaseEntries;
 using BEPUutilities;
-using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Server.Data
@@ -18,17 +17,18 @@ namespace Server.Data
         public Model ModelData;
         public StaticMesh MeshCollider;
 
-        public TerrainMesh(string MeshName, Rendering.Window GameWindow)
+        public TerrainMesh(string MeshName)
         {
-            l.og("Loading Terrain Mesh...");
+            l.og("Loading " + MeshName + " static level mesh...");
             //Load the terrain model data from file
-            ModelData = GameWindow.Content.Load<Model>("TerrainMesh");
+            ModelData = Rendering.Window.Instance.Content.Load<Model>(MeshName);
             //Extract the models vertices and indices from the model data object
             ModelDataExtractor.GetVerticesAndIndicesFromModel(ModelData, out Vertices, out Indices);
-            MeshCollider = new StaticMesh(Vertices, Indices, new AffineTransform(new Vector3(0, 0, 0)));
+            MeshCollider = new StaticMesh(Vertices, Indices, new AffineTransform(new Vector3(0,0,0)));
+            
             //Add the mesh to the physics scene
             Physics.WorldSimulator.Space.Add(MeshCollider);
-            l.og("Loading Terrain Mesh... Complete!");
+            l.ogEdit("Loading " + MeshName + " static level mesh... Complete!");
         }
     }
 }

@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// ================================================================================================================================
+// File:        CharacterData.cs
+// Description: Stores all the current information regarding a clients active player character currently active in the game world
+// ================================================================================================================================
+
 using BEPUutilities;
 
 namespace Server.Data
