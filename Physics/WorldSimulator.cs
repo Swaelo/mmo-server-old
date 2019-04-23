@@ -66,9 +66,9 @@ namespace Server.Physics
             Enemy = new Entities.EnemyEntity(new Vector3(10, 0, 10));
 
             //Place some items onto the ground for the players to pick up
-            ItemManager.AddRandomWeaponPickup(new Vector3(-3, 1, -2.5f));
-            ItemManager.AddRandomWeaponPickup(new Vector3(-4, 1, -2.5f));
-            ItemManager.AddRandomWeaponPickup(new Vector3(-5, 1, -2.5f));
+            ItemManager.AddRandomEquipmentPickup(new Vector3(-3, 1, -2.5f));
+            ItemManager.AddRandomEquipmentPickup(new Vector3(-4, 1, -2.5f));
+            ItemManager.AddRandomEquipmentPickup(new Vector3(-5, 1, -2.5f));
             ItemManager.AddRandomEquipmentPickup(new Vector3(-6, 1, -2.5f));
             ItemManager.AddRandomEquipmentPickup(new Vector3(-7, 1, -2.5f));
             ItemManager.AddRandomEquipmentPickup(new Vector3(-8, 1, -2.5f));

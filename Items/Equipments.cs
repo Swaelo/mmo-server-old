@@ -8,7 +8,19 @@ namespace Server.Items
 {
     public enum Equipments
     {
+        Cloak,
+        Helmet,
+        LeftBoot,
+        LeftGlove,
+        LeftShoulder,
+        Necklace,
+        Pants,
+        RightBoot,
+        RightGlove,
+        RightShoulder,
         Shield,
-        Helmet
+        Shirt,
+        Sword,
+        Katana
     }
 }

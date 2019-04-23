@@ -27,10 +27,13 @@ public enum ClientPacketType
     ConnectionCheckReply = 13,
 
     PlayerInventoryRequest = 14,
-    PlayerTakeItemRequest = 15,
-    RemoveInventoryItem = 16,
-    EquipInventoryItem = 17
+    PlayerEquipmentRequest = 15,
+    PlayerTakeItemRequest = 16,
+    RemoveInventoryItem = 17,
+    EquipInventoryItem = 18,
+    UnequipItem = 19
 }
+
 public enum ServerPacketType
 {
     AccountRegistrationReply = 1,
@@ -53,7 +56,8 @@ public enum ServerPacketType
     RemovePlayer = 15,
 
     PlayerInventoryItems = 16,
-    PlayerInventoryUpdate = 17
+    PlayerEquipmentItems = 17,
+    PlayerInventoryUpdate = 18
 }
 
 namespace Server.Networking
@@ -79,9 +83,11 @@ namespace Server.Networking
             Packets.Add((int)ClientPacketType.DisconnectionNotice, HandlePlayerDisconnect);
             Packets.Add((int)ClientPacketType.ConnectionCheckReply, HandleConnectionCheckReply);
             Packets.Add((int)ClientPacketType.PlayerInventoryRequest, HandlePlayerInventoryRequest);
+            Packets.Add((int)ClientPacketType.PlayerEquipmentRequest, HandlePlayerEquipmentRequest);
             Packets.Add((int)ClientPacketType.PlayerTakeItemRequest, HandlePlayerTakeItem);
             Packets.Add((int)ClientPacketType.RemoveInventoryItem, HandleRemoveInventoryItem);
             Packets.Add((int)ClientPacketType.EquipInventoryItem, HandleEquipInventoryItem);
+            Packets.Add((int)ClientPacketType.UnequipItem, HandleUnequipItem);
         }
 
         public static void ReadClientPacket(int ClientID, byte[] PacketBuffer)
@@ -92,6 +98,24 @@ namespace Server.Networking
             //Invoke whatever function is registered to handle this type of packet
             if (Packets.TryGetValue(PacketType, out Packet Packet))
                 Packet.Invoke(ClientID, PacketBuffer);
+        }
+
+        //Moves an item from the players equipment to their inventory
+        public static void HandleUnequipItem(int ClientID, byte[] PacketData)
+        {
+            PacketReader Reader = new PacketReader(PacketData);
+            int PacketType = Reader.ReadInt();
+            string PlayerName = Reader.ReadString();
+            int ItemID = Reader.ReadInt();
+            EquipmentSlot ItemSlot = (EquipmentSlot)Reader.ReadInt();
+
+            //Remove the item from the players equipment
+            Database.UnequipPlayerItem(PlayerName, ItemSlot);
+            //Add the item to the players inventory 
+            Database.GivePlayerItem(PlayerName, ItemID);
+
+            //Send the players updated inventory state to them
+            SendPlayerInventoryUpdate(ClientID, PlayerName);
         }
 
         //Moves an item from the players inventory to their equipment screen
@@ -164,6 +188,23 @@ namespace Server.Networking
 
                 SendPlayerInventoryUpdate(ClientID, PlayerName);
             }
+        }
+
+        //User is requesting for a list of items they have equipped on their character
+        public static void HandlePlayerEquipmentRequest(int ClientID, byte[] PacketData)
+        {
+            //Read from the packet data which characters equipment we are looking for
+            PacketReader Reader = new PacketReader(PacketData);
+            int PacketType = Reader.ReadInt();
+            string PlayerName = Reader.ReadString();
+            //Load all of that players equipment from the database
+            List<int> EquipmentItems = Database.GetPlayersEquipment(PlayerName);
+            //Write each equipment item into a new packet and send that back to the client who requested it
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.PlayerEquipmentItems);
+            foreach (int ItemNumber in EquipmentItems)
+                Writer.WriteInt(ItemNumber);
+            ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
 
         //User is requesting for a list of all items in their inventory
@@ -318,12 +359,10 @@ namespace Server.Networking
             Writer.WriteInt(CharacterCount);
 
             //Loop through for each character registered under this users account
-            l.og(CharacterCount + " characters to load in");
             for(int i = 0; i < CharacterCount; i++)
             {
                 //Get each characters name from the database
                 string CharacterName = Database.GetCharacterName(AccountName, i + 1);
-                l.og("Loading " + CharacterName + "'s character data");
                 //Then load that characters data
                 CharacterData Data = Database.GetCharacterData(CharacterName);
 
@@ -560,7 +599,6 @@ namespace Server.Networking
             AttackPosition = Maths.VectorTranslate.ConvertVector(AttackPosition);
             Vector3 AttackScale = Reader.ReadVector3();
             Quaternion AttackRotation = Reader.ReadQuaternion();
-            l.og("player attacked at " + AttackPosition);
             //Pass the information about this attack on to the entity manager so it can process which enemies the attack hit
             Entities.EntityManager.HandlePlayerAttack(AttackPosition, AttackScale, AttackRotation);
         }
@@ -568,7 +606,6 @@ namespace Server.Networking
         //Removes a player from the game once they have stopped playing
         public static void HandlePlayerDisconnect(int ClientID, byte[] PacketData)
         {
-            l.og("player disconnecting");
             ClientConnection Client = ConnectionManager.ClientConnections[ClientID];
             Entities.EntityManager.HandleClientDisconnect(Client);
             Networking.ConnectionManager.HandleClientDisconnect(Client);

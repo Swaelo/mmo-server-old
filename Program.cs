@@ -31,7 +31,7 @@ namespace Server
             Networking.ConnectionManager.InitializeManager();
 
             //Open the monogame window (which will start up the physics simulation) to see whats going on
-            Rendering.Window GameWindow = new Rendering.Window(800, 600, 1700, 20);
+            Rendering.Window GameWindow = new Rendering.Window(800, 600);// 1700, 20);
             return true;
         }
 

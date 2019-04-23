@@ -48,7 +48,6 @@
     <Compile Include="Items\EquipmentSlots.cs" />
     <Compile Include="Items\Item.cs" />
     <Compile Include="Items\ItemManager.cs" />
-    <Compile Include="Items\Weapons.cs" />
     <Compile Include="Maths\VectorTranslate.cs" />
     <Compile Include="Entities\BaseEntity.cs" />
     <Compile Include="Entities\EnemyEntity.cs" />

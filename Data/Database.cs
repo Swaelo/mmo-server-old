@@ -104,6 +104,15 @@ namespace Server.Data
             MySqlCommand Command = new MySqlCommand(Query, Connection);
             Command.ExecuteNonQuery();
         }
+        
+        //Removes an item from the specified slot of the players equipment screen
+        public static void UnequipPlayerItem(string Charactername, EquipmentSlot EquipSlot)
+        {
+            string SlotName = EquipSlot.ToString();
+            string Query = "UPDATE equipments SET " + SlotName + "='0' WHERE CharacterName='" + Charactername + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            Command.ExecuteNonQuery();
+        }
 
         //Finds which is the first free slot in the players inventory
         public static int GetFirstFreeBagSlot(string CharacterName)
@@ -153,6 +162,33 @@ namespace Server.Data
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
+        //Returns a list of all the items equipped on a player
+        public static List<int> GetPlayersEquipment(string PlayerName)
+        {
+            List<int> EquippedItems = new List<int>();
+            EquippedItems.Add(GetEquippedItem(PlayerName, "Head"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "Back"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "Neck"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "Chest"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "LeftShoulder"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "RightShoulder"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "LeftGlove"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "RightGlove"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "Legs"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "LeftHand"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "RightHand"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "LeftFoot"));
+            EquippedItems.Add(GetEquippedItem(PlayerName, "RightFoot"));
+            return EquippedItems;
+        }
+
+        private static int GetEquippedItem(string PlayerName, string SlotName)
+        {
+            string Query = "SELECT " + SlotName + " FROM equipments WHERE CharacterName='" + PlayerName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            return Convert.ToInt32(Command.ExecuteScalar());
+        }
+
         //Returns a list of all the items stored in a players inventory
         public static List<int> GetPlayersInventory(string PlayerName)
         {
@@ -167,7 +203,7 @@ namespace Server.Data
         //Returns the ID of whatever item is stored in a characters inventory
         private static int GetInventoryItem(string PlayerName, int BagSlot)
         {
-            string Query = "SELECT ItemSlot" + BagSlot + " from inventories WHERE CharacterName='" + PlayerName + "'";
+            string Query = "SELECT ItemSlot" + BagSlot + " FROM inventories WHERE CharacterName='" + PlayerName + "'";
             MySqlCommand Command = new MySqlCommand(Query, Connection);
             return Convert.ToInt32(Command.ExecuteScalar());
         }

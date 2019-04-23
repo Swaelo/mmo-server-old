@@ -17,6 +17,7 @@ namespace Server.Items
 
         //Keep a track of all items that have been dropped in the game world and yet to be picked up by anyone
         public static List<Item> ActiveItems = new List<Item>();
+        private static Random RNG = new Random();
 
         //Retrieve the next item ID to be assigned from the database backup
         public static void InitializeItemManager()
@@ -109,31 +110,11 @@ namespace Server.Items
             PacketManager.SendListSpawnItem(ActivePlayers, NewConsumable);
         }
 
-        //Adds a new weapon pickup into the game world
-        public static void AddRandomWeaponPickup(Vector3 SpawnLocation)
-        {
-            Random Generator = new Random();
-            var WeaponTypes = Enum.GetNames(typeof(Weapons)).Length;
-            //Select one of the weapon types randomly
-            Weapons NewWeaponType = (Weapons)Generator.Next(0, WeaponTypes);
-            string WeaponName = Enum.GetName(typeof(Weapons), NewWeaponType);
-            Item NewWeapon = new Item(WeaponName, NextID());
-            NewWeapon.Type = "Weapon";
-            ActiveItems.Add(NewWeapon);
-            NewWeapon.Collider = new Box(SpawnLocation, 0.25f, 0.25f, 0.25f);
-            Physics.WorldSimulator.Space.Add(NewWeapon.Collider);
-            Rendering.Window.Instance.ModelDrawer.Add(NewWeapon.Collider);
-            List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
-            PacketManager.SendListSpawnItem(ActivePlayers, NewWeapon);
-            l.og("added a new " + WeaponName + " weapon pickup to the game world");
-        }
-
         //Adds a new random piece of equipment into the game world
         public static void AddRandomEquipmentPickup(Vector3 SpawnLocation)
         {
-            Random Generator = new Random();
             var EquipmentTypes = Enum.GetNames(typeof(Equipments)).Length;
-            Equipments NewEquipmentType = (Equipments)Generator.Next(0, EquipmentTypes);
+            Equipments NewEquipmentType = (Equipments)RNG.Next(0, EquipmentTypes);
             string EquipmentName = Enum.GetName(typeof(Equipments), NewEquipmentType);
             Item NewEquipment = new Item(EquipmentName, NextID());
             NewEquipment.Type = "Equipment";
