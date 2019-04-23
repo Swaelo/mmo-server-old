@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using BEPUutilities;
+using BEPUphysics;
 
 namespace Server.Pathfinding
 {
@@ -25,13 +26,53 @@ namespace Server.Pathfinding
 
         //Pathfinding values
         public NavMeshVertex Parent = null; //Which node to travel to next to traverse along the computed pathway
-        public float GScore;    //Cost to travel from the starting vertex to this vertex
-        public float FScore;    //Cost to travel from this vertex to the ending vertex
+        public float GScore = float.MaxValue;    //Cost to travel from the starting vertex to this vertex
+        public float FScore = float.MaxValue;    //Cost to travel from this vertex to the ending vertex
+        public void ResetPathfindingValues()
+        {
+            Parent = null;
+            GScore = float.MaxValue;
+            FScore = float.MaxValue;
+        }
         
         //Default Constructor
         public NavMeshVertex(Vector3 VertexLocation)
         {
             this.VertexLocation = VertexLocation;
+        }
+
+        //Adds all the vertices in the given array to our list of neighbour vertices
+        public void AddNeighbours(List<NavMeshVertex> NewNeighbours)
+        {
+            //Loop through all of the new vertices which need to be added to our list of neighbours
+            foreach (NavMeshVertex NewNeighbour in NewNeighbours)
+            {
+                //Only add the neighbours which arent already in our neighbours
+                if (!VertexNeighbours.Contains(NewNeighbour))
+                    VertexNeighbours.Add(NewNeighbour);
+            }
+        }
+
+        //Computes the heuristic cost value between this node and the given node
+        //This is simply the vector2 distance between the two points if the navmesh were flatten onto a 2d plane
+        public float HeuristicCost(NavMeshVertex Goal)
+        {
+            Vector2 CurrentHeuristic = new Vector2(VertexLocation.X, VertexLocation.Z);
+            Vector2 GoalHeuristic = new Vector2(Goal.VertexLocation.X, Goal.VertexLocation.Z);
+            return Vector2.Distance(CurrentHeuristic, GoalHeuristic);
+        }
+
+        //Performs a line of sight check between two nodes, the function will return true if there is a straight line between these two
+        //vertices with no obstacles in the way and having no point of the line step outside of the nav mesh
+        public bool LineofSight(NavMeshVertex Target)
+        {
+            //First check if theres anything between the two nodes that would block walking in a straight line
+            Vector3 RayDirection = VertexLocation - Target.VertexLocation;
+            Ray Ray = new Ray(VertexLocation, RayDirection);
+            RayCastResult Result;
+            Physics.WorldSimulator.Space.RayCast(Ray, out Result);
+
+            return false;
         }
     }
 }

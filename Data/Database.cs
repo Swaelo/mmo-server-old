@@ -4,8 +4,10 @@
 // ================================================================================================================================
 
 using System;
+using System.Collections.Generic;
 using BEPUutilities;
 using MySql.Data.MySqlClient;
+using Server.Items;
 
 namespace Server.Data
 {
@@ -13,14 +15,24 @@ namespace Server.Data
     {
         public static MySqlConnection Connection;
 
-        public static void InitializeDatabase(string IP, string Port)
+        public static bool InitializeDatabase(string IP, string Port)
         {
             //Open connection to the games sql database and tell it to use the gamedatabase
             Connection = new MySqlConnection(CreateConnectionString(IP, Port));
-            Connection.Open();
+            try
+            {
+                Connection.Open();
+            }
+            catch (MySql.Data.MySqlClient.MySqlException)
+            {
+                l.og("failed to connect to the sql database");
+                return false;
+            }
+
             MySqlCommand Command = new MySqlCommand("USE gamedatabase", Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
             Reader.Close();
+            return true;
         }
 
         private static string CreateConnectionString(string IP, string Port)
@@ -62,6 +74,65 @@ namespace Server.Data
             return PasswordMatches;
         }
 
+        //Adds an item into the first available slot in the players inventory
+        public static void GivePlayerItem(string CharacterName, int ItemNumber)
+        {
+            //Find which slot of the players inventory we are going to store this item in
+            int ItemSlot = GetFirstFreeBagSlot(CharacterName);
+
+            //Update the players inventory to contain this new item
+            string Query = "UPDATE inventories SET ItemSlot" + ItemSlot + "='" + ItemNumber + "' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            Command.ExecuteNonQuery();
+        }
+
+        //Removes whatever item is in the specified slot of the players inventory
+        public static void RemovePlayerItem(string CharacterName, int BagSlot)
+        {
+            string Query = "UPDATE inventories SET ItemSlot" + BagSlot + "='0' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            Command.ExecuteNonQuery();
+        }
+
+        //Adds an item into the specified slot in the players equipment screen
+        public static void EquipPlayerItem(string CharacterName, int ItemNumber, EquipmentSlot EquipSlot)
+        {
+            //Convert the name of the equipment slot to a string to be used in the sql query
+            string SlotName = EquipSlot.ToString();
+            //Define and use the query to update the players equipment screen
+            string Query = "UPDATE equipments SET " + SlotName + "='" + ItemNumber + "' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            Command.ExecuteNonQuery();
+        }
+
+        //Finds which is the first free slot in the players inventory
+        public static int GetFirstFreeBagSlot(string CharacterName)
+        {
+            List<int> InventoryContents = GetPlayersInventory(CharacterName);
+            for(int i = 0; i < InventoryContents.Count; i++)
+            {
+                if (InventoryContents[i] == 0)
+                    return i + 1;
+            }
+
+            return -1;
+        }
+
+        //Checks if the target characters inventory is full or not
+        public static bool IsBagFull(string CharacterName)
+        {
+            //Get the characters current inventory contents
+            List<int> InventoryContents = GetPlayersInventory(CharacterName);
+
+            //Loop through checking for any empty space
+            foreach (int Slot in InventoryContents)
+                if (Slot == 0)
+                    return false;
+
+            //If no empty space was found the inventory is full
+            return true;
+        }
+
         //Checks if a given character name has already been taken or not
         public static bool IsCharacterNameAvailable(string CharacterName)
         {
@@ -82,23 +153,64 @@ namespace Server.Data
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
+        //Returns a list of all the items stored in a players inventory
+        public static List<int> GetPlayersInventory(string PlayerName)
+        {
+            List<int> BagItems = new List<int>();
+
+            for(int i = 0; i < 9; i++)
+                BagItems.Add(GetInventoryItem(PlayerName, i + 1));
+
+            return BagItems;
+        }
+
+        //Returns the ID of whatever item is stored in a characters inventory
+        private static int GetInventoryItem(string PlayerName, int BagSlot)
+        {
+            string Query = "SELECT ItemSlot" + BagSlot + " from inventories WHERE CharacterName='" + PlayerName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            return Convert.ToInt32(Command.ExecuteScalar());
+        }
+
+        //Queries the server to find out what the next item id will be for the ItemManager when the server is first starting up
+        public static int GetNextItemID()
+        {
+            string Query = "SELECT NextItemID FROM globals";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            return Convert.ToInt32(Command.ExecuteScalar());
+        }
+
+        //Saves what the next item ID should be back into the database, usually when the server is shutting down, or during backup intervals etc
+        public static void SaveNextItemID(int NewValue)
+        {
+            string Query = "UPDATE globals SET NextItemID='" + NewValue + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Connection);
+            Command.ExecuteNonQuery();
+        }
+
         //Saves a brand new player character and all of its information into the database
         public static void SaveNewCharacter(string AccountName, string CharacterName, bool IsMale)
         {
-            //First create a new row in the characters table and save all this new characters information there
-            string Query = "INSERT INTO characters(OwnerAccountName,XPosition,YPosition,ZPosition,CharacterName,ExperiencePoints,ExperienceToLevel,Level,IsMale) " +
-                "VALUES('" + AccountName + "','" + 0f + "','" + 0f + "','" + 0f + "','" + CharacterName + "','" + 0 + "','" + 100 + "','" + 1 + "','" + IsMale + "')";
+            //Store this new characters info in the player character database
+            string Query = "INSERT INTO characters(OwnerAccountName,CharacterName,IsMale) VALUES('" + AccountName + "','" + CharacterName + "','" + (IsMale ? 1 : 0) + "')";
             MySqlCommand Command = new MySqlCommand(Query, Connection);
             Command.ExecuteNonQuery();
-            //update this users database account info, so that this new characters name is stored in the correct character slot 
+
+            //Note how many characters this user has created so far
             int CharacterCount = GetCharacterCount(AccountName) + 1;
-            Query = "USE GameServerDatabase UPDATE accounts SET " +
+            Query = "UPDATE accounts SET CharactersCreated='" + CharacterCount + "' WHERE Username='" + AccountName + "'";
+            Command = new MySqlCommand(Query, Connection);
+            Command.ExecuteNonQuery();
+
+            //Reference the players new character in their account info database
+            Query = "UPDATE accounts SET " +
                 (CharacterCount == 1 ? "FirstCharacterName" : CharacterCount == 2 ? "SecondCharacterName" : "ThirdCharacterName") +
                 "='" + CharacterName + "' WHERE Username='" + AccountName + "'";
             Command = new MySqlCommand(Query, Connection);
             Command.ExecuteNonQuery();
-            //now update the users account info with the number of characters they have created so far
-            Query = "USE GameServerDatabase UPDATE accounts SET CharactersCreated='" + CharacterCount + "' WHERE Username='" + AccountName + "'";
+
+            //Create a new entry into the inventory database to keep track of what items this character has collected
+            Query = "INSERT INTO inventories(CharacterName) VALUES('" + CharacterName + "')";
             Command = new MySqlCommand(Query, Connection);
             Command.ExecuteNonQuery();
         }
@@ -124,14 +236,19 @@ namespace Server.Data
             MySqlCommand Command = new MySqlCommand(Query, Connection);
             MySqlDataReader Reader = Command.ExecuteReader();
             Reader.Read();
-            CharacterData Data = new CharacterData();
-            Data.Account = Reader["OwnerAccountName"].ToString();
-            Data.Position = new Vector3(Convert.ToInt64(Reader["XPosition"]), Convert.ToInt64(Reader["YPosition"]), Convert.ToInt64(Reader["ZPosition"]));
-            Data.Name = CharacterName;
-            Data.Experience = Convert.ToInt32(Reader["ExperiencePoints"]);
-            Data.ExperienceToLevel = Convert.ToInt32(Reader["ExperienceTOLevel"]);
-            Data.Level = Convert.ToInt32(Reader["Level"]);
-            Data.IsMale = Convert.ToBoolean(Reader["IsMale"]);
+
+            //Create a new character data object with all the information stored inside
+            CharacterData Data = new CharacterData
+            {
+                Account = Reader["OwnerAccountName"].ToString(),
+                Position = new Vector3(Convert.ToInt64(Reader["XPosition"]), Convert.ToInt64(Reader["YPosition"]), Convert.ToInt64(Reader["ZPosition"])),
+                Name = CharacterName,
+                Experience = Convert.ToInt32(Reader["ExperiencePoints"]),
+                ExperienceToLevel = Convert.ToInt32(Reader["ExperienceTOLevel"]),
+                Level = Convert.ToInt32(Reader["Level"]),
+                IsMale = Convert.ToBoolean(Reader["IsMale"])
+            };
+
             Reader.Close();
             return Data;
         }

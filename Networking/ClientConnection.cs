@@ -41,7 +41,7 @@ namespace Server.Networking
             int PacketSize = 0;
             //IOExceptions may occur when client connections have been lost (at this time for unknown reasons)
             try { PacketSize = DataStream.EndRead(result); }
-            catch(System.IO.IOException e)
+            catch(System.IO.IOException)
             {
                 ConnectionManager.CloseConnection(this);
                 return;

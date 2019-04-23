@@ -1,11 +1,12 @@
 ﻿// ================================================================================================================================
 // File:        NavMesh.cs
 // Description: Stores information for the entire nav mesh to be loaded into the server simulation, once the nav mesh is set up you
-//              can use the ConstructPathway function which computes a pathway between two locations in the mesh using A* pathfinding
+//              can use the various pathfinding functions to computes a pathway between two locations in the mesh
 // ================================================================================================================================
 
 using System.Collections.Generic;
 using BEPUutilities;
+using BEPUphysics.Paths;
 using BEPUphysics.BroadPhaseEntries;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -23,7 +24,7 @@ namespace Server.Pathfinding
         public List<NavMeshVertex> MeshVertices = new List<NavMeshVertex>();
         public NavMeshVertex VertexForPosition(Vector3 VertexPosition)
         {//Returns an already existing NavMeshVertex for the given position if it can be found
-            foreach(NavMeshVertex Vertex in MeshVertices)
+            foreach (NavMeshVertex Vertex in MeshVertices)
             {
                 if (Vertex.VertexLocation == VertexPosition)
                     return Vertex;
@@ -82,7 +83,7 @@ namespace Server.Pathfinding
             }
 
             //Now set up a list for every unique vertex location in the entire nav mesh, with each of them pointing to their neighbours
-            foreach(NavMeshNode Node in MeshNodes)
+            foreach (NavMeshNode Node in MeshNodes)
             {
                 //Get the NavMeshVertex for each of the 3 points of this node
                 NavMeshVertex Vertex1 = VertexForPosition(Node.VertexLocations[0]);
@@ -108,125 +109,12 @@ namespace Server.Pathfinding
             NextLocations[2] = Vertices[Indices[CurrentIndex + 2]];
             return NextLocations;
         }
-
-        //Constructs a list of world locations which can be travelled across one at a time to traverse from the starting location to the ending location
-        //Based on the A* Pseudocode found in this wikipedia article https://en.wikipedia.org/wiki/A*_search_algorithm
-        public List<Vector3> ConstructPathway(Vector3 PathwayStart, Vector3 PathwayEnd)
-        {
-            //Define a list of locations to traverse along to travel from the starting to the ending location
-            List<Vector3> Pathway = new List<Vector3>();
-
-            //Define two new nav mesh vertices, placed at the pathways starting and ending locations
-            NavMeshVertex StartingVertex = new NavMeshVertex(PathwayStart);
-            NavMeshVertex EndingVertex = new NavMeshVertex(PathwayEnd);
-            //Find the two mesh nodes which contain these vertices
-            NavMeshNode StartingNode = NodeContainingPoint(PathwayStart);
-            NavMeshNode EndingNode = NodeContainingPoint(PathwayEnd);
-            //Now link the starting and ending vertices to each of the vertices which make up the nodes they are contained within
-            StartingVertex.VertexNeighbours.Add(StartingNode.NodeVertices[0]);
-            StartingVertex.VertexNeighbours.Add(StartingNode.NodeVertices[1]);
-            StartingVertex.VertexNeighbours.Add(StartingNode.NodeVertices[2]);
-            EndingVertex.VertexNeighbours.Add(EndingNode.NodeVertices[0]);
-            EndingVertex.VertexNeighbours.Add(EndingNode.NodeVertices[1]);
-            EndingVertex.VertexNeighbours.Add(EndingNode.NodeVertices[2]);
-
-            //If both the starting and ending vertices are found to be contained within the same node, the pathway is just a straight line between the two points
-            if (StartingNode == EndingNode)
-            {
-                l.og("pathway is a straight line");
-                Pathway.Add(PathwayStart);
-                Pathway.Add(PathwayEnd);
-                return Pathway;
-            }
-
-            //Otherwise, when the two vertices are contained within seperate nodes, we perform an A* search to find the pathway between them
-            //First we define two sets of vertices so we can track which nodes have been evaluated and which nodes are yet to be evaluated
-            List<NavMeshVertex> ClosedSet = new List<NavMeshVertex>();
-            List<NavMeshVertex> OpenSet = new List<NavMeshVertex>();
-
-            //Reset the Parent and Score values of every vertex in the nav mesh
-            foreach(NavMeshVertex Vertex in MeshVertices)
-            {
-                Vertex.Parent = null;
-                Vertex.GScore = float.MaxValue;
-                Vertex.FScore = float.MaxValue;
-            }
-
-            //Reset the starting vertex pathfinding values and add the vertex to the open list
-            StartingVertex.GScore = 0;  //The cost to travel from the starting node to itself should be zero
-            StartingVertex.FScore = HeuristicCost(StartingVertex, EndingVertex);
-            OpenSet.Add(StartingVertex);
-            
-            while(OpenSet.Count > 0)
-            {
-                //Select from the OpenSet the Vertex with the lowest FScore value
-                NavMeshVertex CurrentVertex = OpenSet[0];
-                for (int i = 1; i < OpenSet.Count; i++)
-                    if (OpenSet[i].FScore < CurrentVertex.FScore)
-                        CurrentVertex = OpenSet[i];
-
-                //If the new current vertex is one of the vertices which defines the ending node, then the pathway is complete
-                if(EndingNode.NodeVertices.Contains(CurrentVertex))
-                {
-                    l.og("pathway found");
-                    Pathway.Add(EndingVertex.VertexLocation);
-                    EndingVertex.Parent = CurrentVertex;
-                    NavMeshVertex PathStep = EndingVertex;
-                    while (PathStep.Parent != null)
-                    {
-                        Pathway.Add(PathStep.VertexLocation);
-                        PathStep = PathStep.Parent;
-                    }
-                    Pathway.Add(StartingVertex.VertexLocation);
-                    Pathway.Reverse();
-                    return Pathway;
-                }
-
-                //Move the current vertex over to the closed list, as we are now going to compute the cost of all pathways through here
-                OpenSet.Remove(CurrentVertex);
-                ClosedSet.Add(CurrentVertex);
-
-                //Iterate over all of the current vertex neighbours
-                foreach(NavMeshVertex Neighbour in CurrentVertex.VertexNeighbours)
-                {
-                    //Ignore any vertices which have already been completely evaluated
-                    if (ClosedSet.Contains(Neighbour))
-                        continue;
-
-                    //Calculate the GScore to travel from the start vertex to this neighbour vertex
-                    float GScore = CurrentVertex.GScore + Vector3.Distance(CurrentVertex.VertexLocation, Neighbour.VertexLocation);
-
-                    //Newly discovered vertices are added onto the open list
-                    if (!OpenSet.Contains(Neighbour))
-                        OpenSet.Add(Neighbour);
-                    //Any other nodes which do not have a better travel cost are ignore
-                    else if (GScore >= Neighbour.GScore)
-                        continue;
-
-                    //Update this vertex into the pathway as it provides a cheaper travel cost
-                    Neighbour.Parent = CurrentVertex;
-                    Neighbour.GScore = GScore;
-                    Neighbour.FScore = Neighbour.GScore + HeuristicCost(Neighbour, EndingVertex);
-                }
-            }
-
-            l.og("no pathway was found");
-            return Pathway;
-        }
-
-        //Computes the heuristic cost value between two node vertices
-        private float HeuristicCost(NavMeshVertex Neighbour, NavMeshVertex Goal)
-        {
-            Vector2 NeighbourHeuristic = new Vector2(Neighbour.VertexLocation.X, Neighbour.VertexLocation.Z);
-            Vector2 GoalHeuristic = new Vector2(Goal.VertexLocation.X, Goal.VertexLocation.Z);
-            return Vector2.Distance(NeighbourHeuristic, GoalHeuristic);
-        }
-
-        //Checks the point against every node in the nav mesh until it finds one which the point is inside
+        
+        //Checks the given point against every node in this nav mesh until it finds one which node the point is inside
         //Based on answers found in this question https://gamedev.stackexchange.com/questions/28781/easy-way-to-project-point-onto-triangle-or-plane/152476#152476
-        private static NavMeshNode NodeContainingPoint(Vector3 Point)
+        public NavMeshNode FindNodeContainingPoint(Vector3 Point)
         {
-            foreach (NavMeshNode Node in Physics.WorldSimulator.TestLevelNavMesh.MeshNodes)
+            foreach (NavMeshNode Node in MeshNodes)
             {
                 //Define the 3 corner points of the triangle
                 Vector3 P1 = Node.VertexLocations[0];

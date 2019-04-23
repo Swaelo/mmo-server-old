@@ -7,6 +7,12 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
+using BEPUutilities;
+using BEPUphysics.Entities.Prefabs;
+using Server.Networking;
+using Server.Items;
+using BEPUphysics.CollisionShapes.ConvexShapes;
+using BEPUphysics.CollisionTests.CollisionAlgorithms;
 
 namespace Server.Entities
 {
@@ -24,6 +30,25 @@ namespace Server.Entities
         {
             ActiveEntities.Add(NewEntity);
             NewEntity.ID = EntityIDGenerator.GetNextID();
+        }
+
+        //Removes an entity from the game world
+        public static void RemoveEntity(BaseEntity DeadEntity)
+        {
+            ActiveEntities.Remove(DeadEntity);
+            Physics.WorldSimulator.Space.Remove(DeadEntity.Entity);
+            Rendering.Window.Instance.ModelDrawer.Remove(DeadEntity.Entity);
+        }
+        
+        //Removes a list of entities from the game world
+        public static void RemoveEntities(List<BaseEntity> DeadEntities)
+        {
+            foreach(BaseEntity DeadEntity in DeadEntities)
+            {
+                ActiveEntities.Remove(DeadEntity);
+                Physics.WorldSimulator.Space.Remove(DeadEntity.Entity);
+                Rendering.Window.Instance.ModelDrawer.Remove(DeadEntity.Entity);
+            }
         }
 
         //Returns from the list of active entities, the entities which clients should be told about
@@ -71,18 +96,69 @@ namespace Server.Entities
             }
         }
 
+        //Checks if the attack hit any enemies, damages them accordingly
+        public static void HandlePlayerAttack(Vector3 AttackPosition, Vector3 AttackScale, Quaternion AttackRotation)
+        {
+            //Create a box shape and transform to apply to it for the players attack collider
+            BoxShape AttackCollider = new BoxShape(AttackScale.X, AttackScale.Y, AttackScale.Z);
+            RigidTransform AttackTransform = new RigidTransform(AttackPosition);
+
+            //While applying the attack to all the enemies in the scene, keep a list of enemies that were killed by the attack so they can
+            //be removed from the game once the collection of enemies has been iterated through completely
+            List<BaseEntity> DeadEntities = new List<BaseEntity>();
+
+            //Test this attack against every enemy in the scene
+            foreach(BaseEntity Enemy in ActiveEntities)
+            {
+                //Create a collider for each enemy
+                BoxShape EnemyCollider = new BoxShape(1, 1, 1);
+                RigidTransform EnemyTransform = new RigidTransform(Enemy.Entity.Position);
+
+                //Check if the attack hit this enemy
+                bool AttackHit = BoxBoxCollider.AreBoxesColliding(AttackCollider, EnemyCollider, ref AttackTransform, ref EnemyTransform);
+                if (AttackHit)
+                {
+                    //Apply damage to the enemy and update all players on its new status
+                    Enemy.HealthPoints -= 1;
+
+                    //If the enemy has run out of health they need to be removed from the game, and all clients need to be told to remove them
+                    if(Enemy.HealthPoints <= 0)
+                        //Add the enemy to the list of enemies which were killed by this attack so they can be dealt with once the attack has been applied to all enemies
+                        DeadEntities.Add(Enemy);
+                }
+            }
+
+            //If any entities were killed by this players attack they need to be removed from the game world
+            if(DeadEntities.Count > 0)
+            {
+                //Get a list of all the active players who will need to be told about the enemies that were just killed
+                List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
+                //Tell all of these active players which entities where killed by the players attack
+                PacketManager.SendListRemoveEntities(ActivePlayers, DeadEntities);
+                //Now remove all these entities from the servers world simulation
+                RemoveEntities(DeadEntities);
+
+                //Spawn a potion for each entity that was killed
+                foreach(EnemyEntity DeadEnemy in DeadEntities)
+                    ItemManager.AddRandomConsumablePickup(ConsumableTypes.Potions, DeadEnemy.Position);
+            }
+        }
+
         //Handles disconnection of a player from the game
         public static void HandleClientDisconnect(Networking.ClientConnection Client)
         {
-            //Remove them from the scene
-            Physics.WorldSimulator.Space.Remove(Client.ServerCollider);
-            Rendering.Window.Instance.ModelDrawer.Remove(Client.ServerCollider);
+            //Remove them from the scene if they have an active collider
+            if(Client.ServerCollider != null)
+            {
+                Physics.WorldSimulator.Space.Remove(Client.ServerCollider);
+                Rendering.Window.Instance.ModelDrawer.Remove(Client.ServerCollider);
 
-            //Tell any enemies attacking them to drop their target
-            Entities.EntityManager.DropTarget(Client);
+                //Tell any enemies attacking them to drop their target
+                Entities.EntityManager.DropTarget(Client);
 
-            //Backup their character data in the database
-            Data.Database.SaveCharacterLocation(Client.CharacterName, Maths.VectorTranslate.ConvertVector(Client.CharacterPosition));
+                //Backup their character data in the database
+                Data.Database.SaveCharacterLocation(Client.CharacterName, Maths.VectorTranslate.ConvertVector(Client.CharacterPosition));
+            }
         }
     }
 

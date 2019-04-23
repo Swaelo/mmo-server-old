@@ -26,8 +26,7 @@ namespace Server.Rendering
         public BasicEffect LineDrawer;
         public TextDrawer TextDrawer;
         public SpriteBatch UIDrawer;
-
-        //public Debug.Camera Camera;
+        
         public Rendering.Camera Camera;
 
         //Content
@@ -77,6 +76,35 @@ namespace Server.Rendering
             Graphics.PreferredBackBufferWidth = WindowWidth;
             Graphics.PreferredBackBufferHeight = WindowHeight;
             this.Window.Position = new Point(10, 10);
+
+            //Initialize the debug message log
+            Messages = new string[10];
+            for (int i = 0; i < 10; i++)
+                Messages[i] = "";
+
+            //Set up the scene camera
+            //Camera = new Debug.Camera(new BEPUutilities.Vector3(-10, 7, 5), 0, 0, BEPUutilities.Matrix.CreatePerspectiveFieldOfViewRH(Microsoft.Xna.Framework.MathHelper.PiOver4, Graphics.PreferredBackBufferWidth / (float)Graphics.PreferredBackBufferHeight, .1f, 10000));
+            Camera = new Rendering.Camera(new BEPUutilities.Vector3(-10, 7, 5), 0, 0, BEPUutilities.Matrix.CreatePerspectiveFieldOfViewRH(Microsoft.Xna.Framework.MathHelper.PiOver4, Graphics.PreferredBackBufferWidth / (float)Graphics.PreferredBackBufferHeight, .1f, 10000));
+
+            //Register the application deconstruction function
+            Exiting += CloseWindow;
+        }
+
+        //Initialize the window at a specific location
+        public Window(int Width, int Height, int XPos, int YPos)
+        {
+            //Assign the static instance variable to point to this monogame window for easy global access
+            Instance = this;
+
+            //Initialize the graphics device and tell its where all the assets are that will be used during runtime
+            Graphics = new GraphicsDeviceManager(this);
+            Graphics.GraphicsProfile = GraphicsProfile.HiDef;
+            Content.RootDirectory = "Content";
+
+            //Set the size and position of the game window
+            Graphics.PreferredBackBufferWidth = Width;
+            Graphics.PreferredBackBufferHeight = Height;
+            this.Window.Position = new Point(XPos, YPos);
 
             //Initialize the debug message log
             Messages = new string[10];
@@ -177,6 +205,13 @@ namespace Server.Rendering
             //G - Toggle wireframe rendering
             if (WasKeyPressed(Keys.G))
                 ModelDrawer.IsWireframe = !ModelDrawer.IsWireframe;
+
+            //F12 - Shut down the server
+            if (WasKeyPressed(Keys.F12))
+            {
+                this.Exit();
+                return;
+            }
 
             //Update the server simulation
             Physics.WorldSimulator.Update(DeltaTime);

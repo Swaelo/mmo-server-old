@@ -6,8 +6,10 @@
 using System;
 using System.Diagnostics;
 using BEPUphysics;
+using BEPUphysics.Entities.Prefabs;
 using BEPUutilities;
 using BEPUutilities.Threading;
+using Server.Items;
 
 namespace Server.Physics
 {
@@ -22,6 +24,7 @@ namespace Server.Physics
         public static Space Space;
         
         public static Pathfinding.NavMesh TestLevelNavMesh; //Navigation mesh used for AI pathfinding
+        public static Pathfinding.NavMesh WorldNavMesh;
         public static Data.TerrainMesh LevelMesh;   //Level collision mesh used for physics
 
         public static Entities.EnemyEntity Enemy;   //test enemy
@@ -39,7 +42,10 @@ namespace Server.Physics
                 for (int i = 0; i < Environment.ProcessorCount; i++)
                     ParallelLooper.AddThread();
             }
-
+            
+            //Initialize the item manager and load all its nessacery information out from the database
+            Items.ItemManager.InitializeItemManager();
+            
             //Set up the bepu physics world space simulation
             Space = new Space(ParallelLooper);
             Space.ForceUpdater.Gravity = new Vector3(0, -9.81f, 0);
@@ -50,16 +56,22 @@ namespace Server.Physics
             FPSController = new Rendering.FPSCharacterControls(Space, Rendering.Window.Instance.Camera, Rendering.Window.Instance);
             FPSController.CharacterController.Body.Tag = "noDisplayObject";
 
-            //Load the level navigation mesh
-            TestLevelNavMesh = new Pathfinding.NavMesh("AITestLevelNavMesh");
-            Rendering.Window.Instance.ModelDrawer.Add(TestLevelNavMesh.MeshData);
-
-            //Load the level collision mesh
-            LevelMesh = new Data.TerrainMesh("AITestLevelCollision");
-            GameWindow.ModelDrawer.Add(LevelMesh.MeshCollider);
+            //Place a ground plane for everyone to stand upon
+            Box Ground = new Box(Vector3.Zero, 50, 1, 50);
+            Ground.BecomeKinematic();
+            GameWindow.ModelDrawer.Add(Ground);
+            WorldSimulator.Space.Add(Ground);
 
             //Place an enemy entity into the level
-            Enemy = new Entities.EnemyEntity(new Vector3(19.31f, 1.64f, 0.44f));
+            Enemy = new Entities.EnemyEntity(new Vector3(10, 0, 10));
+
+            //Place some items onto the ground for the players to pick up
+            ItemManager.AddRandomWeaponPickup(new Vector3(-3, 1, -2.5f));
+            ItemManager.AddRandomWeaponPickup(new Vector3(-4, 1, -2.5f));
+            ItemManager.AddRandomWeaponPickup(new Vector3(-5, 1, -2.5f));
+            ItemManager.AddRandomEquipmentPickup(new Vector3(-6, 1, -2.5f));
+            ItemManager.AddRandomEquipmentPickup(new Vector3(-7, 1, -2.5f));
+            ItemManager.AddRandomEquipmentPickup(new Vector3(-8, 1, -2.5f));
         }
 
         public static void Update(float DeltaTime)

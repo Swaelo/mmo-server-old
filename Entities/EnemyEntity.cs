@@ -5,10 +5,16 @@
 
 using System.Collections.Generic;
 using BEPUutilities;
+using BEPUphysics;
 using BEPUphysics.Entities;
 using BEPUphysics.Entities.Prefabs;
-using Server.Networking;
+using BEPUphysics.NarrowPhaseSystems.Pairs;
+using BEPUphysics.BroadPhaseEntries;
+using BEPUphysics.BroadPhaseEntries.MobileCollidables;
+using BEPUphysicsDrawer.Models;
 using Server.Physics;
+using Server.Networking;
+using Server.Pathfinding;
 
 namespace Server.Entities
 {
@@ -22,37 +28,39 @@ namespace Server.Entities
 
     public class EnemyEntity : BaseEntity
     {
-        public Cylinder Body;   //The physical body of the character
-        
-
-
         public EnemyState EntityState = EnemyState.Idle;    //Current AI state of the entity
         private float AgroRange = 5f;   //How close players must be for the enemy to start targetting them
         private float AgroMaxDistance = 10f;    //How far players can run away before they will stop being targetted
         public ClientConnection PlayerTarget = null; //The current player the entity is targetting in combat
         private List<Vector3> NavigationPathway;    //Pathway of navmeshnodes for the entity to follow to reach its target location
         private Vector3 SpawnLocation;  //The enemy will return to this location after dropping its target
-        private float SeekSpeed = 1;    //How fast the enemy moves while moving towards its current target
-        private float FleeSpeed = 3;    //How fast the enemy moves while returning to its spawn location
+        private float SeekSpeed = 3;    //How fast the enemy moves while moving towards its current target
+        private float FleeSpeed = 5;    //How fast the enemy moves while returning to its spawn location
 
         public EnemyEntity(Vector3 SpawnPosition)
         {
+
             //Store the entities spawn location so they know where to return to once combat has finished
             SpawnLocation = SpawnPosition;
-
-            //Create a box object to represent the entity in the physics scene, set its location and gravity value
-            Entity = new Entity(new Box(SpawnPosition, 1, 1, 1, 1).CollisionInformation, 1);
-            Entity.Position = SpawnPosition;
-
+            
             //Add the box object to the physics scene and start rendering it
+            Entity = new Cylinder(SpawnPosition, 1.7f, 0.6f, 10f);
+
             Physics.WorldSimulator.Space.Add(Entity);
             Rendering.Window.Instance.ModelDrawer.Add(Entity);
-
+            
             //Tell the entity manager this new entity has been created so it can handle it for us
             EntityManager.AddEntity(this);
 
             //Set the type of ingame enemy that this entity represents
             this.Type = "Skeleton Warrior";
+        }
+
+        void RemoveFriction(EntityCollidable sender, BroadPhaseEntry other, NarrowPhasePair pair)
+        {
+            var collidablePair = pair as CollidablePairHandler;
+            if (collidablePair != null)
+                collidablePair.UpdateMaterialProperties(new BEPUphysics.Materials.InteractionProperties());
         }
 
         public override void Update(float DeltaTime)
@@ -135,25 +143,34 @@ namespace Server.Entities
         //Stops everything, finds a path to the target location, then starts navigation to it
         public void SeekLocation(Vector3 TargetLocation)
         {
+            //Change to the seek state so once the pathway has been constructed the enemy will start travelling along it
             EntityState = EnemyState.Seek;
-            NavigationPathway = WorldSimulator.TestLevelNavMesh.ConstructPathway(Entity.Position, WorldSimulator.FPSController.Position);
+            //Grab the levels current nav mesh
+            NavMesh NavMesh = WorldSimulator.TestLevelNavMesh;
+            //Pass the entity and fps controllers positions into the navmesh to find a pathway between these two locations
+            NavigationPathway = AStarSearch.ConstructNodePathway(NavMesh, Entity.Position, WorldSimulator.FPSController.Position);
+
+            //Render a sphere at each step of the pathway so we can see what it looks like
+            ModelDrawer ModelDrawer = Rendering.Window.Instance.ModelDrawer;
+            foreach (Vector3 PathStep in NavigationPathway)
+                ModelDrawer.Add(new Sphere(PathStep, 0.1f, 0));
         }
 
         private void SeekState(float DeltaTime)
         {
-            //Move the enemy towards the next location in the navigation pathway
-            Entity.Position = Vector3.Lerp(Entity.Position, NavigationPathway[0], SeekSpeed * DeltaTime);
-            //Check how far away we are now from this next location in the pathway
-            float NextLocationDistance = Vector3.Distance(Entity.Position, NavigationPathway[0]);
-            //Remove this location from the pathway once we are close enough to it
-            if (NextLocationDistance < 1f)
+            //Travel along the navigation pathway until all steps have been taken
+            float NextStepDistance = Vector3.Distance(Position, NavigationPathway[0]);
+            if(NextStepDistance > 1f)
+            {//Move towards the next step location
+                Vector3 NextStepDirection = Position - NavigationPathway[0];
+                NextStepDirection.Normalize();
+                Entity.Position -= NextStepDirection * SeekSpeed * DeltaTime;
+            }
+            else
+            {//Remove this step from the pathway
                 NavigationPathway.Remove(NavigationPathway[0]);
-            //Once there are no more locations to traverse through along the pathway then the enemy is finished seeking
-            if (NavigationPathway.Count == 0)
-            {
-                l.og("finished seeking");
-                EntityState = EnemyState.Idle;
-                return;
+                if(NavigationPathway.Count == 0)
+                    EntityState = EnemyState.Idle;
             }
         }
 
@@ -163,10 +180,10 @@ namespace Server.Entities
             float TargetDistance = Vector3.Distance(Entity.Position, PlayerTarget.CharacterPosition);
 
             //Attack them if they are within range
-            if (TargetDistance <= 1)
-                l.og("Attack!");
+            //if (TargetDistance <= 1)
+            //    l.og("Attack!");
             //Move closer if they arent close enough to attack
-            else if (TargetDistance > 1 && TargetDistance < AgroMaxDistance)
+            if (TargetDistance > 3 && TargetDistance < AgroMaxDistance)
                 Entity.Position = Vector3.Lerp(Entity.Position, PlayerTarget.CharacterPosition, SeekSpeed * DeltaTime);
             //If they are out of range then drop them as our target
             else if(TargetDistance > AgroMaxDistance)

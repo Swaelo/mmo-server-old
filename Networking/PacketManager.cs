@@ -4,6 +4,10 @@
 // ================================================================================================================================
 
 using System.Collections.Generic;
+using Server.Entities;
+using Server.Data;
+using Server.Items;
+using System.Threading;
 using BEPUutilities;
 
 public enum ClientPacketType
@@ -14,11 +18,18 @@ public enum ClientPacketType
     CharacterDataRequest = 4,
     EnterWorldRequest = 5,
     ActiveEntityRequest = 6,
-    NewPlayerReady = 7,
-    PlayerChatMessage = 8,
-    PlayerUpdate = 9,
-    DisconnectionNotice = 10,
-    ConnectionCheckReply = 11
+    ActiveItemRequest = 7,
+    NewPlayerReady = 8,
+    PlayerChatMessage = 9,
+    PlayerUpdate = 10,
+    PlayerAttack = 11,
+    DisconnectionNotice = 12,
+    ConnectionCheckReply = 13,
+
+    PlayerInventoryRequest = 14,
+    PlayerTakeItemRequest = 15,
+    RemoveInventoryItem = 16,
+    EquipInventoryItem = 17
 }
 public enum ServerPacketType
 {
@@ -26,14 +37,23 @@ public enum ServerPacketType
     AccountLoginReply = 2,
     CharacterCreationReply = 3,
     CharacterDataReply = 4,
+
     ActivePlayerList = 5,
     ActiveEntityList = 6,
-    EntityUpdates = 7,
-    SpawnPlayer = 8,
-    PlayerChatMessage = 9,
-    PlayerUpdate = 10,
-    RemovePlayer = 11,
-    ConnectionCheckRequest = 12
+    ActiveItemList = 7,
+    SpawnItem = 8,
+    RemoveItem = 9,
+
+    EntityUpdates = 10,
+    RemoveEntities = 11,
+
+    PlayerChatMessage = 12,
+    PlayerUpdate = 13,
+    SpawnPlayer = 14,
+    RemovePlayer = 15,
+
+    PlayerInventoryItems = 16,
+    PlayerInventoryUpdate = 17
 }
 
 namespace Server.Networking
@@ -51,11 +71,17 @@ namespace Server.Networking
             Packets.Add((int)ClientPacketType.CharacterDataRequest, HandleCharacterDataRequest);
             Packets.Add((int)ClientPacketType.EnterWorldRequest, HandleEnterWorldRequest);
             Packets.Add((int)ClientPacketType.ActiveEntityRequest, HandleActiveEntityRequest);
+            Packets.Add((int)ClientPacketType.ActiveItemRequest, HandleActiveItemRequest);
             Packets.Add((int)ClientPacketType.NewPlayerReady, HandleNewPlayerReady);
             Packets.Add((int)ClientPacketType.PlayerChatMessage, HandlePlayerChatMessage);
             Packets.Add((int)ClientPacketType.PlayerUpdate, HandlePlayerUpdate);
+            Packets.Add((int)ClientPacketType.PlayerAttack, HandlePlayerAttack);
             Packets.Add((int)ClientPacketType.DisconnectionNotice, HandlePlayerDisconnect);
             Packets.Add((int)ClientPacketType.ConnectionCheckReply, HandleConnectionCheckReply);
+            Packets.Add((int)ClientPacketType.PlayerInventoryRequest, HandlePlayerInventoryRequest);
+            Packets.Add((int)ClientPacketType.PlayerTakeItemRequest, HandlePlayerTakeItem);
+            Packets.Add((int)ClientPacketType.RemoveInventoryItem, HandleRemoveInventoryItem);
+            Packets.Add((int)ClientPacketType.EquipInventoryItem, HandleEquipInventoryItem);
         }
 
         public static void ReadClientPacket(int ClientID, byte[] PacketBuffer)
@@ -64,9 +90,98 @@ namespace Server.Networking
             PacketReader Reader = new PacketReader(PacketBuffer);
             int PacketType = Reader.ReadInt();
             //Invoke whatever function is registered to handle this type of packet
-            Packet Packet;
-            if (Packets.TryGetValue(PacketType, out Packet))
+            if (Packets.TryGetValue(PacketType, out Packet Packet))
                 Packet.Invoke(ClientID, PacketBuffer);
+        }
+
+        //Moves an item from the players inventory to their equipment screen
+        public static void HandleEquipInventoryItem(int ClientID, byte[] PacketData)
+        {
+            //Read the information from the packet data
+            PacketReader Reader = new PacketReader(PacketData);
+            int PacketType = Reader.ReadInt();
+            string PlayerName = Reader.ReadString();
+            int BagSlot = Reader.ReadInt();
+            int ItemNumber = Reader.ReadInt();
+            EquipmentSlot EquipSlot = (EquipmentSlot)Reader.ReadInt();
+
+            //Remove the item from the players inventory
+            Database.RemovePlayerItem(PlayerName, BagSlot);
+            //Add the item into the players equipment screen
+            Database.EquipPlayerItem(PlayerName, ItemNumber, EquipSlot);
+        }
+
+        //Removes an item from a players inventory
+        public static void HandleRemoveInventoryItem(int ClientID, byte[] PacketData)
+        {
+            //Read the information from the packet data
+            PacketReader Reader = new PacketReader(PacketData);
+            int PacketType = Reader.ReadInt();
+            string PlayerName = Reader.ReadString();
+            int BagSlot = Reader.ReadInt();
+
+            //Remove the item from the players inventory
+            Database.RemovePlayerItem(PlayerName, BagSlot);
+
+            //Update the player on their new inventory contents
+            SendPlayerInventoryUpdate(ClientID, PlayerName);
+        }
+        
+        //Sends a player up to date information regarding what they have in their inventory
+        private static void SendPlayerInventoryUpdate(int ClientID, string PlayerName)
+        {
+            //Get the current contents of the players inventory
+            List<int> InventoryItems = Database.GetPlayersInventory(PlayerName);
+
+            //Store all the item data in a new network packet
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.PlayerInventoryUpdate);
+            foreach (int ID in InventoryItems)
+                Writer.WriteInt(ID);
+
+            //Send the packet
+            ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
+        }
+
+        //User is trying to pick up an item from the groundf
+        public static void HandlePlayerTakeItem(int ClientID, byte[] PacketData)
+        {
+            //Read the information from the packet
+            PacketReader Reader = new PacketReader(PacketData);
+            int PacketType = Reader.ReadInt();
+            string PlayerName = Reader.ReadString();
+            int ItemNumber = Reader.ReadInt();
+            int ItemID = Reader.ReadInt();
+            
+            //If the item is still available for pick and the player has item in their bags then we let them take it
+            if(ItemManager.CanTakeItem(ItemID) && !Database.IsBagFull(PlayerName))
+            {
+                //Add this item into the players inventory
+                Database.GivePlayerItem(PlayerName, ItemNumber);
+                //Remove this item from the game world
+                ItemManager.RemoveItem(ItemID);
+                Thread.Sleep(250);
+
+                SendPlayerInventoryUpdate(ClientID, PlayerName);
+            }
+        }
+
+        //User is requesting for a list of all items in their inventory
+        public static void HandlePlayerInventoryRequest(int ClientID, byte[] PacketData)
+        {
+            PacketReader Reader = new PacketReader(PacketData);
+            int PacketType = Reader.ReadInt();
+            string CharacterName = Reader.ReadString();
+
+            //Check what items are in this players inventory
+            List<int> InventoryItems = Database.GetPlayersInventory(CharacterName);
+
+            //Write the ID of each item in a new packet and return it to the user who requested it
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.PlayerInventoryItems);
+            foreach (int ItemID in InventoryItems)
+                Writer.WriteInt(ItemID);
+            ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
 
         //Allows users to register new accounts into the database
@@ -199,21 +314,25 @@ namespace Server.Networking
         {
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.CharacterDataReply);
-            int CharacterCount = Data.Database.GetCharacterCount(AccountName);
+            int CharacterCount = Database.GetCharacterCount(AccountName);
             Writer.WriteInt(CharacterCount);
+
             //Loop through for each character registered under this users account
+            l.og(CharacterCount + " characters to load in");
             for(int i = 0; i < CharacterCount; i++)
             {
-                string CharacterName = Data.Database.GetCharacterName(AccountName, i + 1);
-                Data.CharacterData CharacterData = Data.Database.GetCharacterData(CharacterName);
-                //Write each of their characters info into the packet
-                Writer.WriteString(CharacterData.Account);
-                Writer.WriteVector3(CharacterData.Position);
-                Writer.WriteString(CharacterData.Name);
-                Writer.WriteInt(CharacterData.Experience);
-                Writer.WriteInt(CharacterData.ExperienceToLevel);
-                Writer.WriteInt(CharacterData.Level);
-                Writer.WriteInt(CharacterData.IsMale ? 1 : 0);
+                //Get each characters name from the database
+                string CharacterName = Database.GetCharacterName(AccountName, i + 1);
+                l.og("Loading " + CharacterName + "'s character data");
+                //Then load that characters data
+                CharacterData Data = Database.GetCharacterData(CharacterName);
+
+                //Write all the characters data into the network packet
+                Writer.WriteString(Data.Account);   //Which account this character belongs to
+                Writer.WriteString(Data.Name);  //This characters ingame name
+                Writer.WriteVector3(Data.Position); //This characters position in the game world
+                Writer.WriteInt(Data.Level);    //This characters current level
+                Writer.WriteInt(Data.IsMale ? 1 : 0);  //The characters gender
             }
 
             //Send all the data off to the client
@@ -246,8 +365,7 @@ namespace Server.Networking
                 Writer.WriteVector3(OtherClient.CharacterPosition);
             }
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
-        }
-        //After recieving the active player list, the new client will then request info about all the active entities in the game
+        }//After recieving the active player list, the new client will then request info about all the active entities in the game
         public static void HandleActiveEntityRequest(int ClientID, byte[] PacketData)
         {
             SendActiveEntities(ClientID);
@@ -264,9 +382,32 @@ namespace Server.Networking
                 Writer.WriteString(Entity.Type);
                 Writer.WriteString(Entity.ID);
                 Writer.WriteVector3(Maths.VectorTranslate.ConvertVector(Entity.Position));
+                Writer.WriteInt(Entity.HealthPoints);
             }
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
+        //After recieving the active entity list, the new client will then request to be sent the list of items active in the game world
+        public static void HandleActiveItemRequest(int ClientID, byte[] PacketData)
+        {
+            SendActiveItems(ClientID);
+        }
+        //Tells a client where all the active items are in the world to have them spawned in before they can start playing
+        public static void SendActiveItems(int ClientID)
+        {
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.ActiveItemList);
+            List<Item> ItemList = ItemManager.ActiveItems;
+            Writer.WriteInt(ItemList.Count);
+            foreach (Item Item in ItemList)
+            {
+                Writer.WriteString(Item.Name);
+                Writer.WriteString(Item.Type);
+                Writer.WriteInt(Item.ID);
+                Writer.WriteVector3(Item.Collider.Position);
+            }
+            ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
+        }
+
         //After recieving the active entity list, the new client will tell us they are ready to enter into the game world
         public static void HandleNewPlayerReady(int ClientID, byte[] PacketData)
         {
@@ -278,6 +419,30 @@ namespace Server.Networking
             //All the other players need to be told about the new player
             List<ClientConnection> OtherClients = ConnectionManager.GetActiveClientsExceptFor(ClientID);
             l.og(ClientID + " has entered the game");
+        }
+
+        //Tells a list of players to spawn a new item onto the ground in their game client
+        public static void SendListSpawnItem(List<ClientConnection> Clients, Item NewItem)
+        {
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.SpawnItem);
+            Writer.WriteString(NewItem.Type);
+            Writer.WriteString(NewItem.Name);
+            Writer.WriteInt(NewItem.ID);
+            Writer.WriteVector3(Maths.VectorTranslate.ConvertVector(NewItem.Collider.Position));
+            foreach (ClientConnection Player in Clients)
+            {
+                ConnectionManager.SendPacketTo(Player.ID, Writer.ToArray());
+            }
+        }
+        
+        public static void SendListRemoveItem(List<ClientConnection> Clients, Item OldItem)
+        {
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.RemoveItem);
+            Writer.WriteInt(OldItem.ID);
+            foreach (ClientConnection Player in Clients)
+                ConnectionManager.SendPacketTo(Player.ID, Writer.ToArray());
         }
         
         //Goes through a list of clients, and updates them all on all the entities in the given list
@@ -295,6 +460,8 @@ namespace Server.Networking
                 Writer.WriteVector3(Maths.VectorTranslate.ConvertVector(Entity.Position));
                 //Rotation
                 Writer.WriteQuaternion(Entity.Rotation);
+                //Health Points Remaining
+                Writer.WriteInt(Entity.HealthPoints);
             }
 
             //Send this packet out to all the clients in the given list
@@ -335,6 +502,22 @@ namespace Server.Networking
                 ConnectionManager.SendPacketTo(Client.ID, Writer.ToArray());
         }
 
+        //Tells a list of players that an enemy is no longer active in the game world
+        public static void SendListRemoveEntities(List<ClientConnection> Players, List<BaseEntity> DeadEntities)
+        {
+            //Create a new packet to store the information about all entities that need to be removed from the game
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.RemoveEntities);
+            //Write the number of entities to be removed
+            Writer.WriteInt(DeadEntities.Count);
+            //Write the ID of each entity to be removed
+            foreach (BaseEntity DeadEntity in DeadEntities)
+                Writer.WriteString(DeadEntity.ID);
+            //Send this information to all players in the given list
+            foreach (ClientConnection Player in Players)
+                ConnectionManager.SendPacketTo(Player.ID, Writer.ToArray());
+        }
+
         //Recieves a players updated position/rotation values
         public static void HandlePlayerUpdate(int ClientID, byte[] PacketData)
         {
@@ -366,6 +549,22 @@ namespace Server.Networking
                 ConnectionManager.SendPacketTo(Client.ID, Writer.ToArray());
         }
 
+        //Receives the location where a players attack landed in the world
+        public static void HandlePlayerAttack(int ClientID, byte[] PacketData)
+        {
+            //Figure out where the players attack landed
+            PacketReader Reader = new PacketReader(PacketData);
+            int PacketType = Reader.ReadInt();
+            Vector3 AttackPosition = Reader.ReadVector3();
+            //Any positions read in from unity need to be converted as the axis directions are different in the BEPU physics engine
+            AttackPosition = Maths.VectorTranslate.ConvertVector(AttackPosition);
+            Vector3 AttackScale = Reader.ReadVector3();
+            Quaternion AttackRotation = Reader.ReadQuaternion();
+            l.og("player attacked at " + AttackPosition);
+            //Pass the information about this attack on to the entity manager so it can process which enemies the attack hit
+            Entities.EntityManager.HandlePlayerAttack(AttackPosition, AttackScale, AttackRotation);
+        }
+
         //Removes a player from the game once they have stopped playing
         public static void HandlePlayerDisconnect(int ClientID, byte[] PacketData)
         {
@@ -376,6 +575,10 @@ namespace Server.Networking
         }
         public static void SendListRemoveOther(List<ClientConnection> Clients, string CharacterName)
         {
+            //Dont do anything if an empty list of clients has been sent to the function
+            if (Clients.Count == 0)
+                return;
+
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.RemovePlayer);
             Writer.WriteString(CharacterName);

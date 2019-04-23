@@ -37,23 +37,34 @@
     <StartupObject>Server.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="Content\Content.mgcb" />
+    <Content Include="Content\Content.mgcb" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\CharacterData.cs" />
     <Compile Include="Data\ModelDataExtractor.cs" />
     <Compile Include="Data\StringChecker.cs" />
+    <Compile Include="Items\Consumables.cs" />
+    <Compile Include="Items\Equipments.cs" />
+    <Compile Include="Items\EquipmentSlots.cs" />
+    <Compile Include="Items\Item.cs" />
+    <Compile Include="Items\ItemManager.cs" />
+    <Compile Include="Items\Weapons.cs" />
     <Compile Include="Maths\VectorTranslate.cs" />
     <Compile Include="Entities\BaseEntity.cs" />
     <Compile Include="Entities\EnemyEntity.cs" />
     <Compile Include="Entities\EntityManager.cs" />
+    <Compile Include="Networking\NetworkManager.cs" />
+    <Compile Include="Networking\NetworkPacket.cs" />
+    <Compile Include="Networking\PacketHandler.cs" />
     <Compile Include="Networking\PacketReader.cs" />
     <Compile Include="Data\TerrainMesh.cs" />
     <Compile Include="Networking\ClientConnection.cs" />
     <Compile Include="Networking\ConnectionManager.cs" />
     <Compile Include="Data\Database.cs" />
+    <Compile Include="Networking\PacketTypes.cs" />
     <Compile Include="Networking\PacketWriter.cs" />
     <Compile Include="Pathfinding\NavMeshVertex.cs" />
+    <Compile Include="Pathfinding\AStarSearch.cs" />
     <Compile Include="Rendering\og.cs" />
     <Compile Include="Networking\PacketManager.cs" />
     <Compile Include="Pathfinding\NavMeshNode.cs" />
@@ -97,12 +108,12 @@
   <PropertyGroup>
     <PostBuildEvent>:: Create a new directory for the asset contents and copy all the .mgcb converted files into it
 mkdir "$(ProjectDir)\bin\Debug\Content\"
-xcopy /E /Y "$(ProjectDir)Content\bin\Windows" "$(ProjectDir)\bin\Debug\Content"
-
-:: Copy all the dll files into the build directory
+xcopy /E /Y "$(ProjectDir)Content\bin\Windows" "$(ProjectDir)\bin\Debug\Content"</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>:: Copy all the dll files into the build directory
 xcopy /E /Y "$(ProjectDir)dlls" "$(ProjectDir)\bin\Debug"
 xcopy /E /Y "$(ProjectDir)dlls\BEPU" "$(ProjectDir)\bin\Debug"
-xcopy /E /Y "$(ProjectDir)dlls\MonoGame" "$(ProjectDir)\bin\Debug"
-</PostBuildEvent>
+xcopy /E /Y "$(ProjectDir)dlls\MonoGame" "$(ProjectDir)\bin\Debug"</PreBuildEvent>
   </PropertyGroup>
 </Project>
