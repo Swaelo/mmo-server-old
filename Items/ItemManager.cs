@@ -13,6 +13,9 @@ namespace Server.Items
 {
     public static class ItemManager
     {
+        //Helper Function to find what type of item the given id belongs to
+        
+
         private static int NextItemID = -1;
 
         //Keep a track of all items that have been dropped in the game world and yet to be picked up by anyone
@@ -22,13 +25,13 @@ namespace Server.Items
         //Retrieve the next item ID to be assigned from the database backup
         public static void InitializeItemManager()
         {
-            NextItemID = Data.Database.GetNextItemID();
+            NextItemID = Data.GlobalsDatabase.GetNextItemID();
         }
 
         //Save the next item ID to be assiged to the database
         public static void Backup()
         {
-            Data.Database.SaveNextItemID(NextItemID);
+            Data.GlobalsDatabase.SaveNextItemID(NextItemID);
         }
 
         //Returns the next available item ID to be used for a newly created item
@@ -42,7 +45,7 @@ namespace Server.Items
         public static bool CanTakeItem(int ItemID)
         {
             foreach (Item Item in ActiveItems)
-                if (Item.ID == ItemID)
+                if (Item.ItemID == ItemID)
                     return true;
 
             return false;
@@ -54,6 +57,11 @@ namespace Server.Items
             //Get this correct item with the given ID number and remove it from the list of active items
             Item OldItem = GetItem(ItemID);
             ActiveItems.Remove(OldItem);
+
+            //Remove the item from the physics / rendering scene
+            Physics.WorldSimulator.Space.Remove(OldItem.Collider);
+            Rendering.Window.Instance.ModelDrawer.Remove(OldItem.Collider);
+
             //Tell all active players to remove this item from their game world
             List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
             PacketManager.SendListRemoveItem(ActivePlayers, OldItem);
@@ -63,68 +71,44 @@ namespace Server.Items
         public static Item GetItem(int ItemID)
         {
             foreach (Item Item in ActiveItems)
-                if (Item.ID == ItemID)
+                if (Item.ItemID == ItemID)
                     return Item;
             return null;
         }
-        
-        //Creates a random consumable of the given type
-        public static Item GetRandomConsumable(ConsumableTypes Type)
+
+        //Adds a pickup item into the game world that players can loot and use
+        public static void AddEquipmentPickup(ItemList NewItemType, Vector3 ItemPosition)
         {
-            //Create and seed a new instance of the Random class to use for random item selection
-            Random Generator = new Random();
+            //Create the new equipment item and assign its values to it
+            string NewItemName = Enum.GetName(typeof(ItemList), NewItemType);
+            int NewItemNumber = (int)NewItemType;
 
-            //Generate a brand new item from the given type pool
-            switch (Type)
-            {
-                //First available option is returning a random potion the player is able to drink
-                case (ConsumableTypes.Potions):
-                    //First figure out how many different types of potions there are available
-                    var PotionTypes = Enum.GetNames(typeof(Potions)).Length;
-                    //Select one of these types randomly
-                    Potions RandomType = (Potions)Generator.Next(0, PotionTypes);
-                    string TypeName = EnumToItemName.GetItemName(RandomType);
-                    //Now create and return the potion of this type
-                    Item NewItem = new Item(TypeName, NextID());
-                    NewItem.Type = "Consumable";
-                    ActiveItems.Add(NewItem);
-                    return NewItem;
-            }
+            Item NewItem = new Item(NewItemName, "Equipment", ItemPosition, NewItemNumber, NextID());
+            ActiveItems.Add(NewItem);
 
-            //Return the new item that was requested
-            return null;
+            //Tell any active players to spawn this new item in their game world
+            List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
+            PacketManager.SendListSpawnItem(ActivePlayers, NewItem);
         }
 
-        //Adds a new consumable item pickup into the game world
-        public static void AddRandomConsumablePickup(ConsumableTypes ConsumableType, Vector3 SpawnLocation)
+        //Adds a consumable potion item into the game world that players can loot
+        public static void AddPotionPickup(Potions NewPotionType, Vector3 PotionLocation)
         {
-            //Create the new random consumable object
-            Item NewConsumable = GetRandomConsumable(ConsumableType);
-            //Set up the items physics collider and add it into the scene
-            NewConsumable.Collider = new Box(SpawnLocation, 0.25f, 0.25f, 0.25f);
-            Physics.WorldSimulator.Space.Add(NewConsumable.Collider);
-            //Set the consumable to be rendered inside the server window
-            Rendering.Window.Instance.ModelDrawer.Add(NewConsumable.Collider);
-            //Tell all active players to add this item into their game world
+            string NewPotionName = Enum.GetName(typeof(Potions), NewPotionType);
+            int NewPotionNumber = (int)NewPotionType;
+
+            Item NewPotion = new Item(NewPotionName, "Consumable", PotionLocation, NewPotionNumber, NextID());
+            ActiveItems.Add(NewPotion);
+
             List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
-            PacketManager.SendListSpawnItem(ActivePlayers, NewConsumable);
+            PacketManager.SendListSpawnItem(ActivePlayers, NewPotion);
         }
 
-        //Adds a new random piece of equipment into the game world
-        public static void AddRandomEquipmentPickup(Vector3 SpawnLocation)
+        //Adds a random consumable potion item into the game world
+        public static void AddRandomPotion(Vector3 Position)
         {
-            var EquipmentTypes = Enum.GetNames(typeof(Equipments)).Length;
-            Equipments NewEquipmentType = (Equipments)RNG.Next(0, EquipmentTypes);
-            string EquipmentName = Enum.GetName(typeof(Equipments), NewEquipmentType);
-            Item NewEquipment = new Item(EquipmentName, NextID());
-            NewEquipment.Type = "Equipment";
-            ActiveItems.Add(NewEquipment);
-            NewEquipment.Collider = new Box(SpawnLocation, 0.25f, 0.25f, 0.25f);
-            Physics.WorldSimulator.Space.Add(NewEquipment.Collider);
-            Rendering.Window.Instance.ModelDrawer.Add(NewEquipment.Collider);
-            List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
-            PacketManager.SendListSpawnItem(ActivePlayers, NewEquipment);
-            l.og("added a new " + EquipmentName + " equipment picked to the game world");
+            Potions PotionType = (Potions)RNG.Next(1, 2);
+            AddPotionPickup(PotionType, Position);
         }
     }
 }

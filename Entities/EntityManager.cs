@@ -139,8 +139,8 @@ namespace Server.Entities
                 RemoveEntities(DeadEntities);
 
                 //Spawn a potion for each entity that was killed
-                foreach(EnemyEntity DeadEnemy in DeadEntities)
-                    ItemManager.AddRandomConsumablePickup(ConsumableTypes.Potions, DeadEnemy.Position);
+                foreach (EnemyEntity DeadEnemy in DeadEntities)
+                    ItemManager.AddRandomPotion(DeadEnemy.Position);
             }
         }
 
@@ -157,7 +157,7 @@ namespace Server.Entities
                 Entities.EntityManager.DropTarget(Client);
 
                 //Backup their character data in the database
-                Data.Database.SaveCharacterLocation(Client.CharacterName, Maths.VectorTranslate.ConvertVector(Client.CharacterPosition));
+                Data.CharactersDatabase.SaveCharacterLocation(Client.CharacterName, Maths.VectorTranslate.ConvertVector(Client.CharacterPosition));
             }
         }
     }

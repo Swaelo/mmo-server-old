@@ -40,13 +40,19 @@
     <Content Include="Content\Content.mgcb" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\AccountsDatabase.cs" />
     <Compile Include="Data\CharacterData.cs" />
+    <Compile Include="Data\CharactersDatabase.cs" />
+    <Compile Include="Data\EquipmentsDatabase.cs" />
+    <Compile Include="Data\GlobalsDatabase.cs" />
+    <Compile Include="Data\InventoriesDatabase.cs" />
     <Compile Include="Data\ModelDataExtractor.cs" />
     <Compile Include="Data\StringChecker.cs" />
     <Compile Include="Items\Consumables.cs" />
-    <Compile Include="Items\Equipments.cs" />
     <Compile Include="Items\EquipmentSlots.cs" />
+    <Compile Include="Items\InventoryItem.cs" />
     <Compile Include="Items\Item.cs" />
+    <Compile Include="Items\ItemList.cs" />
     <Compile Include="Items\ItemManager.cs" />
     <Compile Include="Maths\VectorTranslate.cs" />
     <Compile Include="Entities\BaseEntity.cs" />

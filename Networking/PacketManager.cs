@@ -57,7 +57,7 @@ public enum ServerPacketType
 
     PlayerInventoryItems = 16,
     PlayerEquipmentItems = 17,
-    PlayerInventoryUpdate = 18
+    PlayerInventoryGearUpdate = 18
 }
 
 namespace Server.Networking
@@ -103,125 +103,214 @@ namespace Server.Networking
         //Moves an item from the players equipment to their inventory
         public static void HandleUnequipItem(int ClientID, byte[] PacketData)
         {
+            //Read in the packet type
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
-            string PlayerName = Reader.ReadString();
-            int ItemID = Reader.ReadInt();
-            EquipmentSlot ItemSlot = (EquipmentSlot)Reader.ReadInt();
 
-            //Remove the item from the players equipment
-            Database.UnequipPlayerItem(PlayerName, ItemSlot);
-            //Add the item to the players inventory 
-            Database.GivePlayerItem(PlayerName, ItemID);
+            //Read in the characters name and the slot they want to remove the item from
+            string CharacterName = Reader.ReadString();
+            EquipmentSlot EquipmentSlot = (EquipmentSlot)Reader.ReadInt();
 
-            //Send the players updated inventory state to them
-            SendPlayerInventoryUpdate(ClientID, PlayerName);
+            //Make sure the character actually has an item equipped in this gear slot
+            bool ItemEquipped = EquipmentsDatabase.IsItemEquipped(CharacterName, EquipmentSlot);
+            //If no item is equipped in this slot then we just ignore the request all together
+            if (!ItemEquipped)
+            {
+                l.og(CharacterName + "s unequip item request denied: there is no item in this bag slot.");
+                return;
+            }
+
+            //Make sure the character has space available in their inventory to store this item once it has been unequipped
+            bool CharactersBagsFull = InventoriesDatabase.IsCharactersInventoryFull(CharacterName);
+            //If they have no space available in their inventory just ignore the request
+            if (CharactersBagsFull)
+            {
+                l.og(CharacterName + "s unequip item request denied: there is no space in the characters inventory to store the item.");
+                return;
+            }
+
+            //Retrieve from the database the information about what item the character currently has equipped in this gear slot
+            InventoryItem EquippedItem = EquipmentsDatabase.GetEquippedItem(CharacterName, EquipmentSlot);
+
+            //Remove this item from the players equipment
+            EquipmentsDatabase.UnequipCharacterItem(CharacterName, EquipmentSlot);
+            //Add this item to the first available slot in the players inventory
+            InventoriesDatabase.GivePlayerItem(CharacterName, EquippedItem);
+
+            //Send back to the player their updated inventory and equipment state
+            SendPlayerInventoryEquipmentUpdate(ClientID, CharacterName);
         }
 
         //Moves an item from the players inventory to their equipment screen
         public static void HandleEquipInventoryItem(int ClientID, byte[] PacketData)
         {
-            //Read the information from the packet data
+            //Read in the packet type
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
-            string PlayerName = Reader.ReadString();
+
+            //Read in the characters name and the bag slot number with the item they want to equip
+            string CharacterName = Reader.ReadString();
             int BagSlot = Reader.ReadInt();
-            int ItemNumber = Reader.ReadInt();
-            EquipmentSlot EquipSlot = (EquipmentSlot)Reader.ReadInt();
 
-            //Remove the item from the players inventory
-            Database.RemovePlayerItem(PlayerName, BagSlot);
-            //Add the item into the players equipment screen
-            Database.EquipPlayerItem(PlayerName, ItemNumber, EquipSlot);
+            //Find out what item the character currently has stored in this bag slot
+            InventoryItem Item = InventoriesDatabase.GetCharactersInventoryItem(CharacterName, BagSlot);
+            //Find what slot this item can be equipped to
+            Item.ItemSlot = BelongingItemSlot.FindSlot(Item.ItemNumber);
+
+            //If this isnt an item that can be equipped to the player then just ignore this request
+            if (!Item.CanEquip())
+            {
+                l.og(CharacterName + "s equip item request denied: This is not an item that can be equipped.");
+                return;
+            }
+
+            //Make sure there isnt already an item equipped in the characters gear slot that this item uses
+            bool SlotTaken = EquipmentsDatabase.IsItemEquipped(CharacterName, Item.ItemSlot);
+            //If there is already an item equipped in this gear slot then ignore this request
+            if(SlotTaken)
+            {
+                l.og(CharacterName + "s equip item request denied: There is already an item equipped in this gear slot.");
+                return;
+            }
+
+            //Remove this item from the players inventory
+            InventoriesDatabase.RemovePlayerItem(CharacterName, BagSlot);
+            //Add this item to the players equipment
+            EquipmentsDatabase.EquipCharacterItem(CharacterName, Item);
+
+            //Give the player updated information on their current equipped items
+            SendPlayerInventoryEquipmentUpdate(ClientID, CharacterName);
         }
-
+        
         //Removes an item from a players inventory
         public static void HandleRemoveInventoryItem(int ClientID, byte[] PacketData)
         {
             //Read the information from the packet data
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
-            string PlayerName = Reader.ReadString();
+            string CharacterName = Reader.ReadString();
             int BagSlot = Reader.ReadInt();
 
             //Remove the item from the players inventory
-            Database.RemovePlayerItem(PlayerName, BagSlot);
+            InventoriesDatabase.RemovePlayerItem(CharacterName, BagSlot);
 
             //Update the player on their new inventory contents
-            SendPlayerInventoryUpdate(ClientID, PlayerName);
+            SendPlayerInventoryEquipmentUpdate(ClientID, CharacterName);
         }
         
-        //Sends a player up to date information regarding what they have in their inventory
-        private static void SendPlayerInventoryUpdate(int ClientID, string PlayerName)
+        //Sends a player up to date information regarding what they have in their inventory and what they have equipped
+        private static void SendPlayerInventoryEquipmentUpdate(int ClientID, string CharacterName)
         {
-            //Get the current contents of the players inventory
-            List<int> InventoryItems = Database.GetPlayersInventory(PlayerName);
-
-            //Store all the item data in a new network packet
+            //Write a new packet to store all the information
             PacketWriter Writer = new PacketWriter();
-            Writer.WriteInt((int)ServerPacketType.PlayerInventoryUpdate);
-            foreach (int ID in InventoryItems)
-                Writer.WriteInt(ID);
+            Writer.WriteInt((int)ServerPacketType.PlayerInventoryGearUpdate);
 
-            //Send the packet
+            //Get the current contents of the players inventory and write all that data into the network packet
+            List<InventoryItem> InventoryContents = InventoriesDatabase.GetCharactersInventory(CharacterName);
+            foreach(InventoryItem BagItem in InventoryContents)
+            {
+                Writer.WriteInt(BagItem.ItemNumber);
+                Writer.WriteInt(BagItem.ItemID);
+            }
+
+            //Get the current contents of the players equipment and write all that data into the network packet too
+            List<InventoryItem> EquipmentContents = EquipmentsDatabase.GetCharactersEquipment(CharacterName);
+            foreach(InventoryItem EquippedItem in EquipmentContents)
+            {
+                Writer.WriteInt((int)EquippedItem.ItemSlot);
+                Writer.WriteInt(EquippedItem.ItemNumber);
+                Writer.WriteInt(EquippedItem.ItemID);
+            }
+
+            //Send this packet to the client
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
-
+        
         //User is trying to pick up an item from the groundf
         public static void HandlePlayerTakeItem(int ClientID, byte[] PacketData)
         {
-            //Read the information from the packet
+            //Open the network packet
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
-            string PlayerName = Reader.ReadString();
-            int ItemNumber = Reader.ReadInt();
-            int ItemID = Reader.ReadInt();
-            
-            //If the item is still available for pick and the player has item in their bags then we let them take it
-            if(ItemManager.CanTakeItem(ItemID) && !Database.IsBagFull(PlayerName))
-            {
-                //Add this item into the players inventory
-                Database.GivePlayerItem(PlayerName, ItemNumber);
-                //Remove this item from the game world
-                ItemManager.RemoveItem(ItemID);
-                Thread.Sleep(250);
 
-                SendPlayerInventoryUpdate(ClientID, PlayerName);
+            //Read the characters name and the data of the item they want to take into a new InventoryItem object
+            string CharacterName = Reader.ReadString();
+            InventoryItem Item = new InventoryItem();
+            Item.ItemNumber = Reader.ReadInt();
+            Item.ItemID = Reader.ReadInt();
+
+            //Ignore this request if the character has no space in their bags to take the item
+            if(InventoriesDatabase.IsCharactersInventoryFull(CharacterName))
+            {
+                l.og(CharacterName + "s take item request denied: characters inventory is full.");
+                return;
             }
+
+            //Update the players inventory to contain the new item
+            InventoriesDatabase.GivePlayerItem(CharacterName, Item);
+            //Send the player their updated inventory state
+            SendPlayerInventoryEquipmentUpdate(ClientID, CharacterName);
+
+            //Sleep for a moment, then have the item manager remove this object from the game world, while telling all active clients to do the same thing too
+            Thread.Sleep(250);
+            ItemManager.RemoveItem(Item.ItemID);
         }
 
         //User is requesting for a list of items they have equipped on their character
         public static void HandlePlayerEquipmentRequest(int ClientID, byte[] PacketData)
         {
-            //Read from the packet data which characters equipment we are looking for
+            //Open the network packet
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
-            string PlayerName = Reader.ReadString();
-            //Load all of that players equipment from the database
-            List<int> EquipmentItems = Database.GetPlayersEquipment(PlayerName);
-            //Write each equipment item into a new packet and send that back to the client who requested it
+
+            //Read the information from the packet
+            string CharacterName = Reader.ReadString();
+
+            //Load from the database all the items this character currently has equipped
+            List<InventoryItem> CharactersEquipment = Data.EquipmentsDatabase.GetCharactersEquipment(CharacterName);
+
+            //Write a new network packet for the equipped items
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.PlayerEquipmentItems);
-            foreach (int ItemNumber in EquipmentItems)
-                Writer.WriteInt(ItemNumber);
+
+            //Write into the packet the details of each item currently equipped to the player
+            Writer.WriteInt(CharactersEquipment.Count);
+            foreach(InventoryItem EquippedItem in CharactersEquipment)
+            {
+                Writer.WriteInt((int)EquippedItem.ItemSlot);
+                Writer.WriteInt(EquippedItem.ItemNumber);
+                Writer.WriteInt(EquippedItem.ItemID);
+            }
+
+            //Send this packet to the client
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
 
         //User is requesting for a list of all items in their inventory
         public static void HandlePlayerInventoryRequest(int ClientID, byte[] PacketData)
         {
+            //Open the network packet
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
+
+            //Read the characters name whos inventory is being requested
             string CharacterName = Reader.ReadString();
 
-            //Check what items are in this players inventory
-            List<int> InventoryItems = Database.GetPlayersInventory(CharacterName);
+            //Retrieve the current list of items being stored in this players inventory
+            List<InventoryItem> InventoryContents = Data.InventoriesDatabase.GetCharactersInventory(CharacterName);
 
-            //Write the ID of each item in a new packet and return it to the user who requested it
+            //Write a new packet to store all this characters inventory contents
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.PlayerInventoryItems);
-            foreach (int ItemID in InventoryItems)
-                Writer.WriteInt(ItemID);
+
+            //Write into the packet each items ItemNumber and ItemID
+            foreach (InventoryItem Item in InventoryContents)
+            {
+                Writer.WriteInt(Item.ItemNumber);
+                Writer.WriteInt(Item.ItemID);
+            }
+
+            //Send the packet to the client who requested it
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
 
@@ -247,14 +336,14 @@ namespace Server.Networking
             }
 
             //Reject this request if this username is already being used
-            if(!Data.Database.IsAccountNameAvailable(AccountName))
+            if(!AccountsDatabase.IsAccountNameAvailable(AccountName))
             {
                 SendAccountRegistrationReply(ClientID, false, "username is already taken");
                 return;
             }
 
             //Account credentials are valid and the username is available, register this into the database
-            Data.Database.RegisterNewAccount(AccountName, AccountPass);
+            AccountsDatabase.RegisterNewAccount(AccountName, AccountPass);
             SendAccountRegistrationReply(ClientID, true, "Account registered successfully");
             l.og(AccountName + " registered as a new account");
         }
@@ -278,7 +367,7 @@ namespace Server.Networking
             string AccountPass = Reader.ReadString();
 
             //Make sure the user isnt trying to log into an account which doesnt exist
-            if(Data.Database.IsAccountNameAvailable(AccountName))
+            if(AccountsDatabase.IsAccountNameAvailable(AccountName))
             {
                 SendAccountLoginReply(ClientID, false, "account does not exist");
                 return;
@@ -292,7 +381,7 @@ namespace Server.Networking
             }
 
             //Check that the user has provided the correct password for the account
-            if(!Data.Database.IsPasswordCorrect(AccountName, AccountPass))
+            if(!AccountsDatabase.IsPasswordCorrect(AccountName, AccountPass))
             {
                 SendAccountLoginReply(ClientID, false, "password was incorrect");
                 return;
@@ -315,24 +404,26 @@ namespace Server.Networking
         //Allows users to create new characters once logged into their accounts
         public static void HandleCharacterCreationRequest(int ClientID, byte[] PacketData)
         {
-            //Extract the desired character data from the network packet
+            //Open the network packet
             PacketReader Reader = new PacketReader(PacketData);
             int PacketType = Reader.ReadInt();
-            string AccountName = Reader.ReadString();
-            string CharacterName = Reader.ReadString();
-            bool IsMale = Reader.ReadInt() == 1;
+
+            //Create a new CharacterData object and store all the new characters data extracted from the network packet into it
+            CharacterData NewCharacterData = new CharacterData();
+            NewCharacterData.Account = Reader.ReadString();
+            NewCharacterData.Name = Reader.ReadString();
+            NewCharacterData.IsMale = Reader.ReadInt() == 1;
 
             //Make sure this character name hasnt already been taken by someone else
-            if(!Data.Database.IsCharacterNameAvailable(CharacterName))
+            if(!CharactersDatabase.IsCharacterNameAvailable(NewCharacterData.Name))
             {
-                SendCharacterCreationReply(ClientID, false, "character name already taken");
+                SendCharacterCreationReply(ClientID, false, "character name already taken.");
                 return;
             }
 
-            //If the name is available create that for them
-            Data.Database.SaveNewCharacter(AccountName, CharacterName, IsMale);
-            SendCharacterCreationReply(ClientID, true, "character created");
-            l.og(AccountName + " created " + CharacterName + " as a new character");
+            //Otherwise, save the new character into the database
+            CharactersDatabase.SaveNewCharacter(NewCharacterData);
+            SendCharacterCreationReply(ClientID, true, "character created.");
         }
         public static void SendCharacterCreationReply(int ClientID, bool CreationSuccess, string ReplyMessage)
         {
@@ -351,30 +442,33 @@ namespace Server.Networking
             string AccountName = Reader.ReadString();
             SendCharacterData(ClientID, AccountName);
         }
+
+        //Sends a client all the data regarding every character existing under this account name
         public static void SendCharacterData(int ClientID, string AccountName)
         {
+            //Create a new network packet to store all the information
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.CharacterDataReply);
-            int CharacterCount = Database.GetCharacterCount(AccountName);
-            Writer.WriteInt(CharacterCount);
 
-            //Loop through for each character registered under this users account
+            //Write in the number of characters existing in this account, then loop through and write each characters details into the packet
+            int CharacterCount = CharactersDatabase.GetCharacterCount(AccountName);
+            Writer.WriteInt(CharacterCount);
             for(int i = 0; i < CharacterCount; i++)
             {
-                //Get each characters name from the database
-                string CharacterName = Database.GetCharacterName(AccountName, i + 1);
-                //Then load that characters data
-                CharacterData Data = Database.GetCharacterData(CharacterName);
+                //Grab the next characters name from the database
+                string CharacterName = CharactersDatabase.GetCharacterName(AccountName, i + 1);
+                //Use the characters name to get the rest of its information from the database
+                CharacterData Data = CharactersDatabase.GetCharacterData(CharacterName);
 
-                //Write all the characters data into the network packet
-                Writer.WriteString(Data.Account);   //Which account this character belongs to
-                Writer.WriteString(Data.Name);  //This characters ingame name
-                Writer.WriteVector3(Data.Position); //This characters position in the game world
-                Writer.WriteInt(Data.Level);    //This characters current level
-                Writer.WriteInt(Data.IsMale ? 1 : 0);  //The characters gender
+                //Write all of this characters details into the network packet
+                Writer.WriteString(Data.Account);
+                Writer.WriteString(Data.Name);
+                Writer.WriteVector3(Data.Position);
+                Writer.WriteInt(Data.Level);
+                Writer.WriteInt(Data.IsMale ? 1 : 0);
             }
 
-            //Send all the data off to the client
+            //Send this packet to the client who requested it
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
 
@@ -433,17 +527,26 @@ namespace Server.Networking
         //Tells a client where all the active items are in the world to have them spawned in before they can start playing
         public static void SendActiveItems(int ClientID)
         {
+            //Define new packet with instructions to spawn a list of item picks into the clients game world
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.ActiveItemList);
+
+            //Grab the list of current item picks active in the world right now
             List<Item> ItemList = ItemManager.ActiveItems;
+            //Write into the packet the total number of items that are currently active
             Writer.WriteInt(ItemList.Count);
+
             foreach (Item Item in ItemList)
             {
+                //For each item, write in its Name, Type, Number, ID and Position
                 Writer.WriteString(Item.Name);
                 Writer.WriteString(Item.Type);
-                Writer.WriteInt(Item.ID);
-                Writer.WriteVector3(Item.Collider.Position);
+                Writer.WriteInt(Item.ItemNumber);
+                Writer.WriteInt(Item.ItemID);
+                Writer.WriteVector3(Maths.VectorTranslate.ConvertVector(Item.Collider.Position));
             }
+
+            //Send the packet off to the client
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
 
@@ -463,25 +566,34 @@ namespace Server.Networking
         //Tells a list of players to spawn a new item onto the ground in their game client
         public static void SendListSpawnItem(List<ClientConnection> Clients, Item NewItem)
         {
+            //Define new packet with SpawnItem instruction
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.SpawnItem);
+
+            //Write in the items Type, Name, Number, ID and Position
             Writer.WriteString(NewItem.Type);
             Writer.WriteString(NewItem.Name);
-            Writer.WriteInt(NewItem.ID);
+            Writer.WriteInt(NewItem.ItemNumber);
+            Writer.WriteInt(NewItem.ItemID);
             Writer.WriteVector3(Maths.VectorTranslate.ConvertVector(NewItem.Collider.Position));
-            foreach (ClientConnection Player in Clients)
-            {
-                ConnectionManager.SendPacketTo(Player.ID, Writer.ToArray());
-            }
+
+            //Now grab the current list of active client connections and tell them all to spawn this new item into their game worlds
+            List<ClientConnection> ActiveClients = ConnectionManager.GetActiveClients();
+            ConnectionManager.SendPacketTo(ActiveClients, Writer.ToArray());
         }
         
         public static void SendListRemoveItem(List<ClientConnection> Clients, Item OldItem)
         {
+            //Define new packet with RemoveItem instruction
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.RemoveItem);
-            Writer.WriteInt(OldItem.ID);
-            foreach (ClientConnection Player in Clients)
-                ConnectionManager.SendPacketTo(Player.ID, Writer.ToArray());
+
+            //All we need to write is the items Network ID which is enough for the game clients to know which item to remove
+            Writer.WriteInt(OldItem.ItemID);
+
+            //Now send this packet to all active client connections
+            List<ClientConnection> ActiveClients = ConnectionManager.GetActiveClients();
+            ConnectionManager.SendPacketTo(ActiveClients, Writer.ToArray());
         }
         
         //Goes through a list of clients, and updates them all on all the entities in the given list

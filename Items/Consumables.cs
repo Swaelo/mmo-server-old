@@ -15,28 +15,7 @@ namespace Server.Items
     //Lists the different type of potions that are available
     public enum Potions
     {
-        Health_Potion,
-        Mana_Potion,
-        Energy_Potion,
-        Damage_Potion
+        HealingPotion = 1,
+        ManaPotion = 2
     };
-
-    public class EnumToItemName
-    {
-        public static string GetItemName(Potions Type)
-        {
-            switch(Type)
-            {
-                case (Potions.Health_Potion):
-                    return "Health Potion";
-                case (Potions.Mana_Potion):
-                    return "Mana Potion";
-                case (Potions.Energy_Potion):
-                    return "Energy Potion";
-                case (Potions.Damage_Potion):
-                    return "Damage Potion";
-            }
-            return "";
-        }
-    }
 }

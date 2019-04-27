@@ -39,6 +39,7 @@ namespace Server.Networking
             }
             return ActiveClients;
         }
+
         //returns a list of all characters currently active in the game world, except for 1
         public static List<ClientConnection> GetActiveClientsExceptFor(int ClientID)
         {
@@ -106,6 +107,13 @@ namespace Server.Networking
         public static void SendPacketTo(int ClientID, byte[] PacketData)
         {
             ClientConnections[ClientID].DataStream.BeginWrite(PacketData, 0, PacketData.Length, null, null);
+        }
+
+        //Sends network packet to a list of active game clients
+        public static void SendPacketTo(List<ClientConnection> Clients, byte[] PacketData)
+        {
+            foreach (ClientConnection Client in Clients)
+                Client.DataStream.BeginWrite(PacketData, 0, PacketData.Length, null, null);
         }
 
         //Checks if any of the active clients are logged into the given user account
