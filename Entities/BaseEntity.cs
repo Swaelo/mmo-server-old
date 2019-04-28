@@ -5,7 +5,6 @@
 // ================================================================================================================================
 
 using BEPUphysics.Entities;
-using BEPUphysics.Entities.Prefabs;
 using BEPUutilities;
 
 namespace Server.Entities

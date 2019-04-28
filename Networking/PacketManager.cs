@@ -31,7 +31,9 @@ public enum ClientPacketType
     PlayerTakeItemRequest = 16,
     RemoveInventoryItem = 17,
     EquipInventoryItem = 18,
-    UnequipItem = 19
+    UnequipItem = 19,
+
+    NetworkTest = 20
 }
 
 public enum ServerPacketType
@@ -57,7 +59,9 @@ public enum ServerPacketType
 
     PlayerInventoryItems = 16,
     PlayerEquipmentItems = 17,
-    PlayerInventoryGearUpdate = 18
+    PlayerInventoryGearUpdate = 18,
+
+    NetworkTest = 19
 }
 
 namespace Server.Networking
@@ -88,8 +92,20 @@ namespace Server.Networking
             Packets.Add((int)ClientPacketType.RemoveInventoryItem, HandleRemoveInventoryItem);
             Packets.Add((int)ClientPacketType.EquipInventoryItem, HandleEquipInventoryItem);
             Packets.Add((int)ClientPacketType.UnequipItem, HandleUnequipItem);
+            Packets.Add((int)ClientPacketType.NetworkTest, HandleNetworkTestRequest);
         }
 
+        private static void HandleNetworkTestRequest(int ClientID, byte[] PacketData)
+        {
+            for(int i = 0; i < 5; i++)
+            {
+                PacketWriter Writer = new PacketWriter();
+                Writer.WriteInt((int)ServerPacketType.NetworkTest);
+                Writer.WriteInt(i + 1);
+                ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
+            }
+        }
+        
         public static void ReadClientPacket(int ClientID, byte[] PacketBuffer)
         {
             //Find out what type of packet has been sent to us from the user
@@ -266,15 +282,15 @@ namespace Server.Networking
             //Read the information from the packet
             string CharacterName = Reader.ReadString();
 
-            //Load from the database all the items this character currently has equipped
-            List<InventoryItem> CharactersEquipment = Data.EquipmentsDatabase.GetCharactersEquipment(CharacterName);
+            SendPlayerEquipmentItems(ClientID, CharacterName);
+        }
 
-            //Write a new network packet for the equipped items
+        private static void SendPlayerEquipmentItems(int ClientID, string CharacterName)
+        {
             PacketWriter Writer = new PacketWriter();
             Writer.WriteInt((int)ServerPacketType.PlayerEquipmentItems);
 
-            //Write into the packet the details of each item currently equipped to the player
-            Writer.WriteInt(CharactersEquipment.Count);
+            List<InventoryItem> CharactersEquipment = EquipmentsDatabase.GetCharactersEquipment(CharacterName);
             foreach(InventoryItem EquippedItem in CharactersEquipment)
             {
                 Writer.WriteInt((int)EquippedItem.ItemSlot);
@@ -282,7 +298,22 @@ namespace Server.Networking
                 Writer.WriteInt(EquippedItem.ItemID);
             }
 
-            //Send this packet to the client
+            ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
+        }
+
+        private static void SendPlayerInventoryItems(int ClientID, string CharacterName)
+        {
+            PacketWriter Writer = new PacketWriter();
+            Writer.WriteInt((int)ServerPacketType.PlayerInventoryItems);
+
+            List<InventoryItem> InventoryContents = InventoriesDatabase.GetCharactersInventory(CharacterName);
+
+            foreach(InventoryItem Item in InventoryContents)
+            {
+                Writer.WriteInt(Item.ItemNumber);
+                Writer.WriteInt(Item.ItemID);
+            }
+
             ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
         }
 
@@ -299,19 +330,7 @@ namespace Server.Networking
             //Retrieve the current list of items being stored in this players inventory
             List<InventoryItem> InventoryContents = Data.InventoriesDatabase.GetCharactersInventory(CharacterName);
 
-            //Write a new packet to store all this characters inventory contents
-            PacketWriter Writer = new PacketWriter();
-            Writer.WriteInt((int)ServerPacketType.PlayerInventoryItems);
-
-            //Write into the packet each items ItemNumber and ItemID
-            foreach (InventoryItem Item in InventoryContents)
-            {
-                Writer.WriteInt(Item.ItemNumber);
-                Writer.WriteInt(Item.ItemID);
-            }
-
-            //Send the packet to the client who requested it
-            ConnectionManager.SendPacketTo(ClientID, Writer.ToArray());
+            SendPlayerInventoryItems(ClientID, CharacterName);
         }
 
         //Allows users to register new accounts into the database

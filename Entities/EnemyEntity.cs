@@ -5,7 +5,6 @@
 
 using System.Collections.Generic;
 using BEPUutilities;
-using BEPUphysics;
 using BEPUphysics.Entities;
 using BEPUphysics.Entities.Prefabs;
 using BEPUphysics.NarrowPhaseSystems.Pairs;

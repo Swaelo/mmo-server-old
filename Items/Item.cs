@@ -1,4 +1,9 @@
-﻿using BEPUphysics.Entities.Prefabs;
+﻿// ================================================================================================================================
+// File:        Item.cs
+// Description: Stores information for an ingame item
+// ================================================================================================================================
+
+using BEPUphysics.Entities.Prefabs;
 using BEPUutilities;
 
 namespace Server.Items

@@ -187,13 +187,6 @@ namespace Server.Rendering
                 }
             }
 
-            //F1 - prints out the cameras position and orientation values
-            if (WasKeyPressed(Keys.F1))
-            {
-                l.og(Camera.Position);
-                l.og(Camera.ViewDirection);
-            }
-
             //F2 - have the enemy seek to the server ghost
             if (WasKeyPressed(Keys.F2))
                 Physics.WorldSimulator.Enemy.SeekLocation(Physics.WorldSimulator.FPSController.CharacterController.Body.BufferedStates.Entity.Position);

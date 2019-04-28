@@ -3,11 +3,7 @@
 // Description: Allows the server to interact with the local SQL database accounts tables
 // ================================================================================================================================
 
-using System;
-using System.Collections.Generic;
-using BEPUutilities;
 using MySql.Data.MySqlClient;
-using Server.Items;
 
 namespace Server.Data
 {

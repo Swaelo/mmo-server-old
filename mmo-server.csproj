@@ -58,15 +58,11 @@
     <Compile Include="Entities\BaseEntity.cs" />
     <Compile Include="Entities\EnemyEntity.cs" />
     <Compile Include="Entities\EntityManager.cs" />
-    <Compile Include="Networking\NetworkManager.cs" />
-    <Compile Include="Networking\NetworkPacket.cs" />
-    <Compile Include="Networking\PacketHandler.cs" />
     <Compile Include="Networking\PacketReader.cs" />
     <Compile Include="Data\TerrainMesh.cs" />
     <Compile Include="Networking\ClientConnection.cs" />
     <Compile Include="Networking\ConnectionManager.cs" />
     <Compile Include="Data\Database.cs" />
-    <Compile Include="Networking\PacketTypes.cs" />
     <Compile Include="Networking\PacketWriter.cs" />
     <Compile Include="Pathfinding\NavMeshVertex.cs" />
     <Compile Include="Pathfinding\AStarSearch.cs" />

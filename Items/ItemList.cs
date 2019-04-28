@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// ================================================================================================================================
+// File:        ItemList.cs
+// Description: Lists every item available in the game
+// ================================================================================================================================
 
 
 //The complete list of items available in the game

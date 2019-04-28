@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using Server.Networking;
 using BEPUutilities;
-using BEPUphysics.Entities.Prefabs;
 
 namespace Server.Items
 {

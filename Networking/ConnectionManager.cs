@@ -100,7 +100,7 @@ namespace Server.Networking
             ClientConnections.Remove(Client.ID);
             //Tell all the other clients this player has left the game world
             List<ClientConnection> ActiveClients = GetActiveClients();
-            Networking.PacketManager.SendListRemoveOther(ActiveClients, Client.CharacterName);
+            PacketManager.SendListRemoveOther(ActiveClients, Client.CharacterName);
         }
 
         //Sends network packet to active game client
