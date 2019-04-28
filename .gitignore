@@ -3,3 +3,5 @@
 /bin/*
 /obj/*
 /Content/*.fbx
+/Content/bin/*
+/Content/obj/*
