@@ -19,17 +19,29 @@ public enum ItemList
     CrusadersShield = 5,
 
     //Armour Pieces
+    //Helmets
     BattleHelm = 6,
+    //Pauldrons
     LeftBonemouldPauldron = 7,
     RightBonemouldPauldron = 8,
+    //Gloves
     LeftClothGlove = 9,
     RightClothGlove = 10,
+    //Amulets
     MysteriousAmulet = 11,
+    //Cloaks
     LeatherCloak = 12,
+    //Chest Pieces
     EpicPurpleShirt = 13,
-    OldPants = 14,
-    LeftNormalBoot = 15,
-    RightNormalBoot = 16
+    MannaAbs = 14,
+    //Leggings
+    OldPants = 15,
+    MannaLeggings = 16,
+    //Boots
+    LeftNormalBoot = 17,
+    LeftMannaSandal = 18,
+    RightNormalBoot = 19,
+    RightMannaSandal = 20
 }
 
 //Takes an item number and tells you what slot that item can be equipped to
@@ -65,16 +77,16 @@ public static class BelongingItemSlot
         //12 is cloaks
         else if (ItemNumber == 12)
             return EquipmentSlot.Back;
-        //13 is shirts/chest armour
-        else if (ItemNumber == 13)
+        //13-14 is shirts/chest armour
+        else if (ItemNumber > 12 && ItemNumber < 15)
             return EquipmentSlot.Chest;
-        //14 is pants/leg armour
-        else if (ItemNumber == 14)
+        //15-16 is pants/leg armour
+        else if (ItemNumber > 14 && ItemNumber < 17)
             return EquipmentSlot.Legs;
-        //15-16 is left/right boots
-        else if (ItemNumber == 15)
+        //17-18 left boots, 19-20 right boots
+        else if (ItemNumber > 16 && ItemNumber < 19)
             return EquipmentSlot.LeftFoot;
-        else if (ItemNumber == 16)
+        else if (ItemNumber > 18 && ItemNumber < 21)
             return EquipmentSlot.RightFoot;
         else
             return EquipmentSlot.NULL;

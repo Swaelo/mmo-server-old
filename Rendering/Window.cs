@@ -187,25 +187,6 @@ namespace Server.Rendering
                 }
             }
 
-            //F2 - have the enemy seek to the server ghost
-            if (WasKeyPressed(Keys.F2))
-                Physics.WorldSimulator.Enemy.SeekLocation(Physics.WorldSimulator.FPSController.CharacterController.Body.BufferedStates.Entity.Position);
-
-            //Escape - Shut down the entire server
-            if (WasKeyPressed(Keys.Escape))
-                this.Exit();
-
-            //G - Toggle wireframe rendering
-            if (WasKeyPressed(Keys.G))
-                ModelDrawer.IsWireframe = !ModelDrawer.IsWireframe;
-
-            //F12 - Shut down the server
-            if (WasKeyPressed(Keys.F12))
-            {
-                this.Exit();
-                return;
-            }
-
             //Update the server simulation
             Physics.WorldSimulator.Update(DeltaTime);
 
@@ -258,8 +239,6 @@ namespace Server.Rendering
 
             //Instruct the user they can toggle FPS controls with the TAB key
             TextDrawer.Draw("TAB: Toggle FPS controls", new Microsoft.Xna.Framework.Vector2(50, Bottom - 100));
-            TextDrawer.Draw("F1: Display FPS controller position/rotation", new Microsoft.Xna.Framework.Vector2(50, Bottom - 83));
-            TextDrawer.Draw("F2: Have test entity seek to the controllers position", new Microsoft.Xna.Framework.Vector2(50, Bottom - 66));
 
             //Draw the debug messages
             for (int i = 0; i < 10; i++)
