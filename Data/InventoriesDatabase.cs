@@ -12,104 +12,139 @@ namespace Server.Data
 {
     class InventoriesDatabase
     {
-        //Returns an InventoryItem object detailing what is currently being stored in a characters specific inventory slot
-        public static InventoryItem GetCharactersInventoryItem(string CharacterName, int InventorySlot)
+        //Gets the bag slot number of the first free inventory slot available in a characters inventory
+        private static int GetFirstFreeInventorySlot(string CharacterName)
         {
-            //Create the new InventoryItem object to store the data about what the character has stored in the given inventory slot
-            InventoryItem InventoryItem = new InventoryItem();
+            //Fetch the current state of the characters inventory
+            List<ItemData> CharactersInventory = GetAllInventorySlots(CharacterName);
 
-            //Define the SQL queries to extract the relevant information from the database
-            string ItemNumberQuery = "SELECT ItemSlot" + InventorySlot + "ItemNumber FROM inventories WHERE CharacterName='" + CharacterName + "'";
-            string ItemIDQuery = "SELECT ItemSlot" + InventorySlot + "ItemID FROM inventories WHERE CharacterName='" + CharacterName + "'";
+            //Search through all the inventory slots until an empty one is found
+            for(int i = 0; i < CharactersInventory.Count; i++)
+            {
+                //Return this bag slots index if its empty
+                if (CharactersInventory[i].ItemNumber == 0)
+                    return (i + 1);
+            }
 
-            //Use these queries to extract the information from the database and store it in the InventoryItem object
-            //First get the ItemNumber value
-            MySqlCommand Command = new MySqlCommand(ItemNumberQuery, Database.Connection);
+            //No empty inventory slot could be found
+            return -1;
+        }
+
+        //Returns an ItemData object detailing what is currently being stored in a characters inventory slot
+        public static ItemData GetInventorySlot(string CharacterName, int InventorySlot)
+        {
+            //Create a new ItemData object to store all the data about the characters inventory slot
+            ItemData InventoryItem = new ItemData();
+
+            //Extract the items information from the inventory database into the new ItemData object
+            string Query = "SELECT ItemSlot" + InventorySlot + "ItemNumber FROM inventories WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Database.Connection);
             InventoryItem.ItemNumber = Convert.ToInt32(Command.ExecuteScalar());
-            //Second get the ItemID value
-            Command = new MySqlCommand(ItemIDQuery, Database.Connection);
+            Query = "SELECT ItemSlot" + InventorySlot + "ItemID FROM inventories WHERE CharacterName='" + CharacterName + "'";
+            Command = new MySqlCommand(Query, Database.Connection);
             InventoryItem.ItemID = Convert.ToInt32(Command.ExecuteScalar());
+            InventoryItem.ItemEquipmentSlot = ItemList.GetItemEquipmentSlot(InventoryItem.ItemNumber);
 
             //Return the final InventoryItem object
             return InventoryItem;
         }
 
-        //Returns a list of InventoryItem objects representing every item that is currently being stored in a characters inventory
-        //NOTE: Assumes a character with this name already exsits
-        public static List<InventoryItem> GetCharactersInventory(string CharacterName)
+        //Purges a characters inventory of all items contained within, leaving it completely empty
+        public static void PurgeCharactersItems(string CharacterName)
         {
-            //Define the list of InventoryItem objects to list everything the character currently has in their bags
-            List<InventoryItem> InventoryItems = new List<InventoryItem>();
-
-            //Loop through each slot of the players inventory and grab a new InventoryItem object detailing what is stored in each inventory slot
-            for (int i = 0; i < 9; i++)
-                InventoryItems.Add(GetCharactersInventoryItem(CharacterName, i + 1));
-
-            //Return the final list of items being held by the character
-            return InventoryItems;
+            //Loop through and purge the contents of each of the characters inventory slots
+            for(int i = 0; i < 9; i++)
+            {
+                string PurgeQuery = GetPurgeQuery(CharacterName, i + 1);
+                MySqlCommand PurgeCommand = new MySqlCommand(PurgeQuery, Database.Connection);
+                PurgeCommand.ExecuteNonQuery();
+            }
         }
 
-        //Checks if the given characters inventory is currently full or not
-        public static bool IsCharactersInventoryFull(string CharacterName)
+        private static string GetPurgeQuery(string CharacterName, int InventorySlot)
         {
-            //Get the characters current inventory state
-            List<InventoryItem> CharactersInventory = GetCharactersInventory(CharacterName);
+            return "UPDATE inventories SET ItemSlot" + InventorySlot + "ItemNumber='0', ItemSlot" + InventorySlot + "ItemID='0' WHERE CharacterName='" + CharacterName + "'";
+        }
 
-            //Loop through each of these objects checking the contents of each slot in the characters inventory
-            foreach(InventoryItem ItemSlot in CharactersInventory)
+        //Returns a list of ItemData objects detailing the current state of every slot in a characters inventory
+        public static List<ItemData> GetAllInventorySlots(string CharacterName)
+        {
+            //Create a new list to store all the characters inventory slots
+            List<ItemData> InventorySlots = new List<ItemData>();
+
+            //Extract all 9 inventory slots information from the database, into the InventorySlots list
+            for(int i = 1; i < 10; i++)
             {
-                //If we find any ItemSlot with a ItemNumber value of 0, this means that bag slot is currently empty
-                //Find just a single inventory slot which is empty means the inventory is not full so we return true
-                if (ItemSlot.ItemNumber == 0)
+                InventorySlots.Add(GetInventorySlot(CharacterName, i));
+                InventorySlots[i-1].ItemInventorySlot = i;
+            }
+
+            //Return the final list of all the characters inventory slots
+            return InventorySlots;
+        }
+        
+        //Places an item into the first available slot in a characters inventory
+        public static void GiveCharacterItem(string CharacterName, ItemData NewItem)
+        {
+            //Places the new item into the first free slot in the characters inventory
+            string Query = "UPDATE inventories SET ItemSlot" + GetFirstFreeInventorySlot(CharacterName) + "ItemNumber='" + NewItem.ItemNumber + "', ItemSlot" + GetFirstFreeInventorySlot(CharacterName) + "ItemID='" + NewItem.ItemID + "' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Database.Connection);
+            Command.ExecuteNonQuery();
+        }
+
+        //Places an item into a specific slot of a characters inventory
+        public static void GiveCharacterItem(string CharacterName, ItemData NewItem, int InventorySlot)
+        {
+            string Query = "UPDATE inventories SET ItemSlot" + InventorySlot + "ItemNumber='" + NewItem.ItemNumber + "', ItemSlot" + InventorySlot + "ItemID='" + NewItem.ItemID + "' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Database.Connection);
+            Command.ExecuteNonQuery();
+        }
+
+        //Removes an item from a characters inventory
+        public static void RemoveCharacterItem(string CharacterName, int InventorySlot)
+        {
+            string Query = "UPDATE inventories SET ItemSlot" + InventorySlot + "ItemNumber='0', ItemSlot" + InventorySlot + "ItemID='0' WHERE CharacterName='" + CharacterName + "'";
+            MySqlCommand Command = new MySqlCommand(Query, Database.Connection);
+            Command.ExecuteNonQuery();
+        }
+
+        //Moves an item from one inventory slot to another
+        //NOTE: Assumes its moving the item to an empty slot, it will overwrite anything if its there
+        public static void MoveInventoryItem(string CharacterName, int ItemBagSlot, int DestinationBagSlot)
+        {
+            //Get the items information that is being moved around the characters inventory
+            ItemData InventoryItem = GetInventorySlot(CharacterName, ItemBagSlot);
+            //Remove it from the players possession, then readd it in the new target bag slot
+            RemoveCharacterItem(CharacterName, ItemBagSlot);
+            GiveCharacterItem(CharacterName, InventoryItem, DestinationBagSlot);
+        }
+
+        //Swaps the positions of two items currently in the players inventory
+        public static void SwapInventoryItem(string CharacterName, int FirstBagSlot, int SecondBagSlot)
+        {
+            //Get the information of the two items that are being swapped around in the inventory
+            ItemData FirstItem = GetInventorySlot(CharacterName, FirstBagSlot);
+            ItemData SecondItem = GetInventorySlot(CharacterName, SecondBagSlot);
+            //Readd the items into the players inventory, overwritting the other items slot
+            GiveCharacterItem(CharacterName, FirstItem, SecondBagSlot);
+            GiveCharacterItem(CharacterName, SecondItem, FirstBagSlot);
+        }
+
+        //Checks if the player has any free space remaining in their inventory
+        public static bool IsInventoryFull(string CharacterName)
+        {
+            //Grab the current state of every slot in the characters inventory
+            List<ItemData> InventorySlots = GetAllInventorySlots(CharacterName);
+
+            //Run through them all looking for an which is empty
+            foreach(ItemData InventorySlot in InventorySlots)
+            {
+                if (InventorySlot.ItemNumber == 0)
                     return false;
             }
 
-            //If we finished looping through the players inventory and couldnt find any empty slots, then we return false
+            //Inventory is full is no empty spaces could be found
             return true;
-        }
-
-        //Returns the bag slot number which is the first free inventory slot in a characters inventory
-        //NOTE: Assumes there is atleast 1 free slot in that characters inventory
-        public static int GetFirstFreeInventorySlot(string CharacterName)
-        {
-            //Fetch the current state of the characters inventory
-            List<InventoryItem> CharactersInventory = GetCharactersInventory(CharacterName);
-
-            //Loop through each inventory slot, looking for one which is empty
-            for(int i = 0; i < 9; i++)
-            {
-                //Check if this inventory slot is empty, return this slots index number if it is
-                if (CharactersInventory[i].ItemNumber == 0)
-                    return i + 1;
-            }
-
-            //Return -1 error value if no empty inventory slot could be found
-            return -1;
-        }
-
-        //Places an item into the first available slot in a characters inventory
-        //NOTE: Assumes the character has atleast 1 free slot in their inventory
-        public static void GivePlayerItem(string CharacterName, InventoryItem Item)
-        {
-            //Find the first available slot in the characters inventory
-            int AvailableItemSlot = GetFirstFreeInventorySlot(CharacterName);
-
-            //Define the query to update the characters inventory table to store this new item within
-            string InventoryUpdateQuery = "UPDATE inventories SET ItemSlot" + AvailableItemSlot + "ItemNumber='" + Item.ItemNumber + "', ItemSlot" + AvailableItemSlot + "ItemID='" + Item.ItemID + "' WHERE CharacterName='" + CharacterName + "'";
-
-            //Execute the command to finish updating the players current inventory state
-            MySqlCommand InventoryUpdateCommand = new MySqlCommand(InventoryUpdateQuery, Database.Connection);
-            InventoryUpdateCommand.ExecuteNonQuery();
-        }
-
-        //Removes whatever item is being stored in a specific slot of a characters inventory
-        public static void RemovePlayerItem(string CharacterName, int InventorySlot)
-        {
-            //Define the query to update the players inventory table
-            string InventoryUpdateQuery = "UPDATE inventories SET ItemSlot" + InventorySlot + "ItemNumber='0' WHERE CharacterName='" + CharacterName + "'";
-            //Execute the command to complete updating the characters inventory table
-            MySqlCommand InventoryUpdateCommand = new MySqlCommand(InventoryUpdateQuery, Database.Connection);
-            InventoryUpdateCommand.ExecuteNonQuery();
         }
     }
 }

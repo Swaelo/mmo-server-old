@@ -137,10 +137,6 @@ namespace Server.Entities
                 PacketManager.SendListRemoveEntities(ActivePlayers, DeadEntities);
                 //Now remove all these entities from the servers world simulation
                 RemoveEntities(DeadEntities);
-
-                //Spawn a potion for each entity that was killed
-                foreach (EnemyEntity DeadEnemy in DeadEntities)
-                    ItemManager.AddRandomPotion(DeadEnemy.Position);
             }
         }
 

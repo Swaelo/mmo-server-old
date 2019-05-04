@@ -66,28 +66,18 @@ namespace Server.Physics
             //Place an enemy entity into the level
             Enemy = new Entities.EnemyEntity(new Vector3(10, 0, 10));
 
-            //Place some items onto the ground for the players to pick up
-            ItemManager.AddEquipmentPickup(ItemList.MannaAbs, new Vector3(0, 0, -2.5f));
-            ItemManager.AddEquipmentPickup(ItemList.MannaLeggings, new Vector3(1, 0, -2.5f));
-            ItemManager.AddEquipmentPickup(ItemList.LeftMannaSandal, new Vector3(2, 0, -2.5f));
-            ItemManager.AddEquipmentPickup(ItemList.RightMannaSandal, new Vector3(3, 0, -2.5f));
+            //Place one of each item into the game world
+            int CurrentItemNumber = 1;
+            Vector3 CurrentSpawnLocation = new Vector3(-10, 0, -2.5f);
+            for(int i = CurrentItemNumber; i < 23; i++)
+            {
+                //Add in each new item into the game
+                ItemManager.AddItemPickup(CurrentItemNumber, CurrentSpawnLocation);
 
-            //ItemManager.AddPotionPickup(Potions.HealingPotion, new Vector3(0, 0, -2.5f));
-            //ItemManager.AddPotionPickup(Potions.ManaPotion, new Vector3(1, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.AstorasStraightSword, new Vector3(2, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.Kusabimaru, new Vector3(3, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.CrusadersShield, new Vector3(4, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.BattleHelm, new Vector3(5, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.LeftBonemouldPauldron, new Vector3(6, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.RightBonemouldPauldron, new Vector3(7, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.LeftClothGlove, new Vector3(8, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.RightClothGlove, new Vector3(9, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.MysteriousAmulet, new Vector3(10, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.LeatherCloak, new Vector3(11, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.EpicPurpleShirt, new Vector3(12, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.OldPants, new Vector3(13, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.LeftNormalBoot, new Vector3(14, 0, -2.5f));
-            //ItemManager.AddEquipmentPickup(ItemList.RightNormalBoot, new Vector3(15, 0, -2.5f));
+                //Offset the item number and spawn location for the next item spawn
+                CurrentItemNumber++;
+                CurrentSpawnLocation.X -= 1;
+            }
         }
 
         public static void Update(float DeltaTime)

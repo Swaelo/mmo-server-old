@@ -3,59 +3,133 @@
 // Description: Lists every item available in the game
 // ================================================================================================================================
 
+using Server;
+using Server.Items;
+using System;
+using System.Collections.Generic;
 
-//The complete list of items available in the game
-public enum ItemList
+//Contains helper functions for getting other data about an item from giving only its ItemNumber
+public static class ItemList
 {
-    //Potions
-    HealingPotion = 1,
-    ManaPotion = 2,
+    //Master list of every item currently available in the game, sorted into a dictionary by their ItemNumber values
+    public static Dictionary<int, ItemData> MasterItemList = new Dictionary<int, ItemData>();
 
-    //Weapons
-    AstorasStraightSword = 3,
-    Kusabimaru = 4,
+    //Loads all the items information from text file
+    public static void InitializeItemList()
+    {
+        //Open the item list export file
+        string[] FileLines = System.IO.File.ReadAllLines("C:/mmo-client/Assets/Exports/MasterItemList.txt");
 
-    //Shields
-    CrusadersShield = 5,
+        //Loop through all the lines, processing one at a time
+        foreach(string Line in FileLines)
+        {
+            //Split each line with its : seperators
+            string[] LineSplit = Line.Split(':');
 
-    //Armour Pieces
-    //Helmets
-    BattleHelm = 6,
-    //Pauldrons
-    LeftBonemouldPauldron = 7,
-    RightBonemouldPauldron = 8,
-    //Gloves
-    LeftClothGlove = 9,
-    RightClothGlove = 10,
-    //Amulets
-    MysteriousAmulet = 11,
-    //Cloaks
-    LeatherCloak = 12,
-    //Chest Pieces
-    EpicPurpleShirt = 13,
-    MannaAbs = 14,
-    //Leggings
-    OldPants = 15,
-    MannaLeggings = 16,
-    //Boots
-    LeftNormalBoot = 17,
-    LeftMannaSandal = 18,
-    RightNormalBoot = 19,
-    RightMannaSandal = 20
-}
+            //Extract all the items data into a new ItemData object
+            ItemData NewItem = new ItemData();
+            NewItem.ItemName = LineSplit[0];
+            NewItem.ItemDisplayName = LineSplit[1];
+            NewItem.ItemType = FindItemType(LineSplit[2]);
+            NewItem.ItemEquipmentSlot = FindItemSlot(LineSplit[3]);
+            NewItem.ItemNumber = Int32.Parse(LineSplit[4]);
 
-//Takes an item number and tells you what slot that item can be equipped to
-public static class BelongingItemSlot
-{
-    public static EquipmentSlot FindSlot(int ItemNumber)
+            //Store the new item definition into the dictionary with all the others
+            MasterItemList.Add(NewItem.ItemNumber, NewItem);
+        }
+    }
+
+    //Returns the ItemData component from an ItemNumber value
+    public static ItemData GetItemData(int ItemNumber)
+    {
+        if (!MasterItemList.ContainsKey(ItemNumber))
+            return null;
+
+        return MasterItemList[ItemNumber];
+    }
+
+    //Returns the correct item type value from the partial string read out from the file importing
+    private static ItemType FindItemType(string ItemTypeValue)
+    {
+        if (ItemTypeValue == "Consumable")
+            return ItemType.Consumable;
+        else if (ItemTypeValue == "Equipment")
+            return ItemType.Equipment;
+        else if (ItemTypeValue == "AbilityGem")
+            return ItemType.AbilityGem;
+
+        return ItemType.NULL;
+    }
+
+    //Returns the correct equipment slot value from the partial string read out from the file importing
+    private static EquipmentSlot FindItemSlot(string ItemSlotValue)
+    {
+        if (ItemSlotValue == "Head")
+            return EquipmentSlot.Head;
+        else if (ItemSlotValue == "Back")
+            return EquipmentSlot.Back;
+        else if (ItemSlotValue == "Neck")
+            return EquipmentSlot.Neck;
+        else if (ItemSlotValue == "LeftShoulder")
+            return EquipmentSlot.LeftShoulder;
+        else if (ItemSlotValue == "RightShoulder")
+            return EquipmentSlot.RightShoulder;
+        else if (ItemSlotValue == "Chest")
+            return EquipmentSlot.Chest;
+        else if (ItemSlotValue == "LeftGlove")
+            return EquipmentSlot.LeftGlove;
+        else if (ItemSlotValue == "RightGlove")
+            return EquipmentSlot.RightGlove;
+        else if (ItemSlotValue == "Legs")
+            return EquipmentSlot.Legs;
+        else if (ItemSlotValue == "LeftHand")
+            return EquipmentSlot.LeftHand;
+        else if (ItemSlotValue == "RightHand")
+            return EquipmentSlot.RightHand;
+        else if (ItemSlotValue == "LeftFoot")
+            return EquipmentSlot.LeftFoot;
+        else if (ItemSlotValue == "RightFoot")
+            return EquipmentSlot.RightFoot;
+
+        return EquipmentSlot.NULL;
+    }
+
+    //Tells you the name of an item from only having its item number
+    public static string GetItemName(int ItemNumber)
+    {
+        if (!MasterItemList.ContainsKey(ItemNumber))
+            return null;
+
+        return MasterItemList[ItemNumber].ItemName;
+    }
+
+    //Tells you what type an item is
+    public static string GetItemType(int ItemNumber)
+    {
+        //1-2 are potions/consumables
+        if (ItemNumber == 1 || ItemNumber == 2)
+            return "Consumable";
+        //3-20 are all equipment items
+        else if (ItemNumber > 2 && ItemNumber < 21)
+            return "Equipment";
+        //21-23 are ability gems
+        else if (ItemNumber == 21 || ItemNumber == 22)
+            return "Ability Gem";
+
+        //The rest are undefined / outlier values
+        return "NULL";
+    }
+
+    //Tells you what EquipmentSlot an item belongs to
+    public static EquipmentSlot GetItemEquipmentSlot(int ItemNumber)
     {
         //1-2 are potions
-        if (ItemNumber > 0 && ItemNumber < 3)
+        if (ItemNumber == 1 || ItemNumber == 2)
             return EquipmentSlot.NULL;
-        //3-4 are weapons, right hand
-        else if (ItemNumber > 2 && ItemNumber < 5)
+        //3-4 are main hand weapons
+        else if (ItemNumber == 3 || ItemNumber == 4)
             return EquipmentSlot.RightHand;
-        //5 is shields, left hand
+        //5 is a shield for off hand
         else if (ItemNumber == 5)
             return EquipmentSlot.LeftHand;
         //6 is helmets
@@ -77,17 +151,19 @@ public static class BelongingItemSlot
         //12 is cloaks
         else if (ItemNumber == 12)
             return EquipmentSlot.Back;
-        //13-14 is shirts/chest armour
-        else if (ItemNumber > 12 && ItemNumber < 15)
+        //13-14 is chest pieces
+        else if (ItemNumber == 13 || ItemNumber == 14)
             return EquipmentSlot.Chest;
-        //15-16 is pants/leg armour
-        else if (ItemNumber > 14 && ItemNumber < 17)
+        //15-16 is leggings
+        else if (ItemNumber == 15 || ItemNumber == 16)
             return EquipmentSlot.Legs;
-        //17-18 left boots, 19-20 right boots
-        else if (ItemNumber > 16 && ItemNumber < 19)
+        //17-18 is left feet
+        else if (ItemNumber == 17 || ItemNumber == 18)
             return EquipmentSlot.LeftFoot;
-        else if (ItemNumber > 18 && ItemNumber < 21)
+        //19-20 is right feet
+        else if (ItemNumber == 19 || ItemNumber == 20)
             return EquipmentSlot.RightFoot;
+        //The rest are ability gems
         else
             return EquipmentSlot.NULL;
     }

@@ -64,13 +64,18 @@ namespace Server.Data
             MySqlCommand NewCharacterReferenceCommand = new MySqlCommand(NewCharacterReferenceQuery, Database.Connection);
             NewCharacterReferenceCommand.ExecuteNonQuery();
 
-            //Finally, create a new entry into the inventory database to keep track of this new characters inventory, as well as a new entry into the equipments database to track what items they have equipped
+            //Next, create a new entry into the inventory database to keep track of this new characters inventory
             string NewInventoryQuery = "INSERT INTO inventories(CharacterName) VALUES('" + NewCharacterData.Name + "')'";
             MySqlCommand NewInventoryCommand = new MySqlCommand(NewInventoryQuery, Database.Connection);
             NewInventoryCommand.ExecuteNonQuery();
+            //As well as a new entry into the equipments database to track what items they have equipped
             string NewEquipmentQuery = "INSERT INTO equipments(CharacterName) VALUES('" + NewCharacterData.Name + "')'";
             MySqlCommand NewEquipmentCommand = new MySqlCommand(NewEquipmentQuery, Database.Connection);
             NewEquipmentCommand.ExecuteNonQuery();
+            //and finally, a new entry into the actionbars database to track what abilities they have equipped
+            string NewActionBarQuery = "INSERT INTO actionbars(CharacterName) VALUES('" + NewCharacterData.Name + "')'";
+            MySqlCommand NewActionBarCommand = new MySqlCommand(NewActionBarQuery, Database.Connection);
+            NewActionBarCommand.ExecuteNonQuery();
         }
 
         //Returns the name of the users character which exists in the given character slot number

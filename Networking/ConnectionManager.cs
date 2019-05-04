@@ -116,6 +116,13 @@ namespace Server.Networking
                 Client.DataStream.BeginWrite(PacketData, 0, PacketData.Length, null, null);
         }
 
+        //Sends a network packet to all of the currently active game clients
+        public static void SendPacketToActiveClients(byte[] PacketData)
+        {
+            foreach (ClientConnection Client in GetActiveClients())
+                Client.DataStream.BeginWrite(PacketData, 0, PacketData.Length, null, null);
+        }
+
         //Checks if any of the active clients are logged into the given user account
         public static bool IsAccountLoggedIn(string AccountName)
         {

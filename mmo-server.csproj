@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\AccountsDatabase.cs" />
+    <Compile Include="Data\ActionBarsDatabase.cs" />
     <Compile Include="Data\CharacterData.cs" />
     <Compile Include="Data\CharactersDatabase.cs" />
     <Compile Include="Data\EquipmentsDatabase.cs" />
@@ -50,10 +51,11 @@
     <Compile Include="Data\StringChecker.cs" />
     <Compile Include="Items\Consumables.cs" />
     <Compile Include="Items\EquipmentSlots.cs" />
-    <Compile Include="Items\InventoryItem.cs" />
     <Compile Include="Items\Item.cs" />
+    <Compile Include="Items\ItemData.cs" />
     <Compile Include="Items\ItemList.cs" />
     <Compile Include="Items\ItemManager.cs" />
+    <Compile Include="Items\ItemTypes.cs" />
     <Compile Include="Maths\VectorTranslate.cs" />
     <Compile Include="Entities\BaseEntity.cs" />
     <Compile Include="Entities\EnemyEntity.cs" />
@@ -107,13 +109,11 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>:: Create a new directory for the asset contents and copy all the .mgcb converted files into it
-mkdir "$(ProjectDir)\bin\Debug\Content\"
+    <PostBuildEvent>mkdir "$(ProjectDir)bin\Debug\Content\"
 xcopy /E /Y "$(ProjectDir)Content\bin\Windows" "$(ProjectDir)\bin\Debug\Content"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>:: Copy all the dll files into the build directory
-xcopy /E /Y "$(ProjectDir)dlls" "$(ProjectDir)\bin\Debug"
+    <PreBuildEvent>xcopy /E /Y "$(ProjectDir)dlls" "$(ProjectDir)\bin\Debug"
 xcopy /E /Y "$(ProjectDir)dlls\BEPU" "$(ProjectDir)\bin\Debug"
 xcopy /E /Y "$(ProjectDir)dlls\MonoGame" "$(ProjectDir)\bin\Debug"</PreBuildEvent>
   </PropertyGroup>

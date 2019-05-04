@@ -12,102 +12,95 @@ namespace Server.Items
 {
     public static class ItemManager
     {
-        //Helper Function to find what type of item the given id belongs to
-        
-
+        //The universal item ID number to be assigned to the next item that is createrd
         private static int NextItemID = -1;
 
-        //Keep a track of all items that have been dropped in the game world and yet to be picked up by anyone
-        public static List<Item> ActiveItems = new List<Item>();
-        private static Random RNG = new Random();
+        //Keep a list of all the items that have been dropped into the game world and are still available to be taken by players
+        public static Dictionary<int, Item> ActiveItemDictionary = new Dictionary<int, Item>();
 
-        //Retrieve the next item ID to be assigned from the database backup
+        //Returns a list of every single active item pickup, all values extracted from the dictionary
+        public static List<Item> GetActiveItemList()
+        {
+            //Create a new list to store all the active item pickups
+            List<Item> ActiveItemList = new List<Item>();
+
+            //Loop through the dictionary, adding each value into the list
+            foreach (KeyValuePair<int, Item> Entry in ActiveItemDictionary)
+                ActiveItemList.Add(Entry.Value);
+
+            //Return the final list of all the active item pickups
+            return ActiveItemList;
+        }
+
+        //Load in from the database what the next unique item ID to be assigned will be
         public static void InitializeItemManager()
         {
             NextItemID = Data.GlobalsDatabase.GetNextItemID();
         }
 
-        //Save the next item ID to be assiged to the database
-        public static void Backup()
+        //Save into the database what the next unique item ID to be assigned will be
+        public static void SaveNextID()
         {
             Data.GlobalsDatabase.SaveNextItemID(NextItemID);
         }
 
-        //Returns the next available item ID to be used for a newly created item
-        private static int NextID()
+        //Returns the next newly ItemID, updates database what the next one will be
+        public static int GetNextID()
         {
+            //Store the new item ID in a local variable
+            int NewItemID = NextItemID;
+
+            //Increment the next item ID value and back it up to the database
             NextItemID++;
-            return NextItemID;
+            SaveNextID();
+
+            //Return the new item ID value
+            return NewItemID;
         }
 
-        //Checks if there is an item able to be picked up with the given ID number
-        public static bool CanTakeItem(int ItemID)
+        //Add a new item pickup into the game world
+        public static void AddItemPickup(int ItemNumber, Vector3 ItemPosition)
         {
-            foreach (Item Item in ActiveItems)
-                if (Item.ItemID == ItemID)
-                    return true;
+            //Gather information regarding the new item pickup about to be added into the game world
+            string NewItemName = ItemList.GetItemName(ItemNumber);
+            string NewItemType = ItemList.GetItemType(ItemNumber);
 
-            return false;
+            //Instantiate this new item pickup into the servers game world, store it in the dictionary with the others
+            Item NewItem = new Item(NewItemName, NewItemType, ItemNumber, GetNextID(), ItemPosition);
+            ActiveItemDictionary.Add(NewItem.ID, NewItem);
+
+            //Instruct all active clients to spawn this new item pickup into the game worlds
+            PacketManager.SendListSpawnItem(ConnectionManager.GetActiveClients(), NewItem);
         }
 
-        //Removes the item with the given ID from the game world and instructs all game clients to remove it from their game worlds
-        public static void RemoveItem(int ItemID)
+        //Adds an item pickup into the game world with a pre-existing ID value
+        public static void AddItemPickup(int ItemNumber, int ItemID, Vector3 ItemLocation)
         {
-            //Get this correct item with the given ID number and remove it from the list of active items
-            Item OldItem = GetItem(ItemID);
-            ActiveItems.Remove(OldItem);
+            //Gather information regarding teh new item pickup about to be added into the game world
+            string NewItemName = ItemList.GetItemName(ItemNumber);
+            string NewItemType = ItemList.GetItemType(ItemNumber);
 
-            //Remove the item from the physics / rendering scene
-            Physics.WorldSimulator.Space.Remove(OldItem.Collider);
-            Rendering.Window.Instance.ModelDrawer.Remove(OldItem.Collider);
+            //Instantiate this new item pickup object and store it in the dictionary with the others
+            Item NewItem = new Item(NewItemName, NewItemType, ItemNumber, ItemID, ItemLocation);
+            ActiveItemDictionary.Add(ItemID, NewItem);
 
-            //Tell all active players to remove this item from their game world
-            List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
-            PacketManager.SendListRemoveItem(ActivePlayers, OldItem);
+            //Instruct all the active clients to spawn this new item pickup into their game worlds
+            PacketManager.SendListSpawnItem(ConnectionManager.GetActiveClients(), NewItem);
         }
 
-        //Gets the item from the active item list with the given ID number
-        public static Item GetItem(int ItemID)
+        //Removes an active item pickup from the game world
+        public static void RemoveItemPickup(int ItemID)
         {
-            foreach (Item Item in ActiveItems)
-                if (Item.ItemID == ItemID)
-                    return Item;
-            return null;
-        }
+            //Get this items information out of the dictionary
+            Item ItemPickup = ActiveItemDictionary[ItemID];
 
-        //Adds a pickup item into the game world that players can loot and use
-        public static void AddEquipmentPickup(ItemList NewItemType, Vector3 ItemPosition)
-        {
-            //Create the new equipment item and assign its values to it
-            string NewItemName = Enum.GetName(typeof(ItemList), NewItemType);
-            int NewItemNumber = (int)NewItemType;
+            //Remove the item from the dictionary and from the game world
+            Physics.WorldSimulator.Space.Remove(ItemPickup.Collider);
+            Rendering.Window.Instance.ModelDrawer.Remove(ItemPickup.Collider);
+            ActiveItemDictionary.Remove(ItemID);
 
-            Item NewItem = new Item(NewItemName, "Equipment", ItemPosition, NewItemNumber, NextID());
-            ActiveItems.Add(NewItem);
-
-            //Tell any active players to spawn this new item in their game world
-            List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
-            PacketManager.SendListSpawnItem(ActivePlayers, NewItem);
-        }
-
-        //Adds a consumable potion item into the game world that players can loot
-        public static void AddPotionPickup(Potions NewPotionType, Vector3 PotionLocation)
-        {
-            string NewPotionName = Enum.GetName(typeof(Potions), NewPotionType);
-            int NewPotionNumber = (int)NewPotionType;
-
-            Item NewPotion = new Item(NewPotionName, "Consumable", PotionLocation, NewPotionNumber, NextID());
-            ActiveItems.Add(NewPotion);
-
-            List<ClientConnection> ActivePlayers = ConnectionManager.GetActiveClients();
-            PacketManager.SendListSpawnItem(ActivePlayers, NewPotion);
-        }
-
-        //Adds a random consumable potion item into the game world
-        public static void AddRandomPotion(Vector3 Position)
-        {
-            Potions PotionType = (Potions)RNG.Next(1, 2);
-            AddPotionPickup(PotionType, Position);
+            //Instruct all active clients to remove this item pickup from their game worlds
+            PacketManager.SendListRemoveItem(ConnectionManager.GetActiveClients(), ItemID);
         }
     }
 }

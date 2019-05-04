@@ -12,26 +12,20 @@ namespace Server.Items
     {
         public string Name; //The name of this item
         public string Type; //The type of this item
-        public int ItemNumber; //Unique Item Number Identifier
-        public int ItemID;  //Unique Item Network ID
+        public int Number; //Unique Item Number Identifier
+        public int ID;  //Unique Item Network ID
         public Box Collider;    //Physics collider so this item can be dropped item the game world
 
-        public Item(string Name, int ID)
+        public Item(string ItemName, string ItemType, int ItemNumber, int ItemID, Vector3 ItemLocation)
         {
-            this.Name = Name;
-            this.ItemID = ID;
-        }
-        
-        public Item(string ItemName, string ItemType, Vector3 ItemPosition, int ItemNumber, int ItemID)
-        {
-            //Store values
+            //Store all the item values in the class variables
             Name = ItemName;
             Type = ItemType;
-            this.ItemNumber = ItemNumber;
-            this.ItemID = ItemID;
+            Number = ItemNumber;
+            ID = ItemID;
 
-            //Create physics shape and render it
-            Collider = new Box(ItemPosition, .25f, .25f, .25f);
+            //Instantiate a new box collider into the server game world and start rendering it so we can see where the item is
+            Collider = new Box(ItemLocation, .25f, .25f, .25f);
             Physics.WorldSimulator.Space.Add(Collider);
             Rendering.Window.Instance.ModelDrawer.Add(Collider);
         }

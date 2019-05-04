@@ -20,6 +20,9 @@ namespace Server
         
         private static bool StartServer()
         {
+            //Load all the existing game items from the exported text file
+            ItemList.InitializeItemList();
+
             //Connect to the sql database
             if (!Data.Database.InitializeDatabase("localhost", "3306"))
             {
@@ -44,7 +47,7 @@ namespace Server
         private static void CloseServer()
         {
             Console.WriteLine("server is now shutting down");
-            Items.ItemManager.Backup();
+            Items.ItemManager.SaveNextID();
         }
     }
 }
